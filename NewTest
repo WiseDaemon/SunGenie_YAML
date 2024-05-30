@@ -1,0 +1,51 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+  - stage: SequentialTasks
+    jobs:
+      - job: CreateNextTask
+        steps:
+          - script: |
+              # Define variables
+              PersonalAccessToken="dykri67u6rbg57t5ip2ptanjaryncblb3phunucirfwpwm4vj7qq"
+              OrganizationName="saxenashivam1024"
+              ProjectName="SunGenie_ProcessTest"
+
+              # Encode the PAT for authorization
+              Base64AuthInfo=$(echo -n ":$PersonalAccessToken" | base64)
+
+              # Define the API URL for creating a new task
+              Uri="https://dev.azure.com/$OrganizationName/$ProjectName/_apis/wit/workitems/\$Task?api-version=6.0"
+
+              # Function to check task status and create the next task
+              check_and_create_next_task() {
+                previous_task_id=$1
+                next_task_title=$2
+                next_task_description=$3
+
+                # Check if the previous task is closed
+                status=$(curl -s -u ":$PersonalAccessToken" -X GET \
+                  "https://dev.azure.com/$OrganizationName/$ProjectName/_apis/wit/workitems/$previous_task_id?api-version=6.0" \
+                  | jq -r '.fields["System.State"]')
+
+                if [[ "$status" == "Closed" || "$status" == "Resolved" ]]; then
+                  # Create the next task
+                  curl -s -u ":$Base64AuthInfo" -X POST \
+                    -H "Content-Type: application/json-patch+json" \
+                    -d '[{"op": "add", "path": "/fields/System.Title", "value": "'"$next_task_title"'"},
+                         {"op": "add", "path": "/fields/System.Description", "value": "'"$next_task_description"'"},
+                         {"op": "add", "path": "/fields/System.AssignedTo", "value": "'"Sales Ops Team"'"}]' \
+                    $Uri
+                fi
+              }
+
+              # Call the function for each task
+              check_and_create_next_task 1 "Next Task Title 1" "Next Task Description 1"
+              check_and_create_next_task 2 "Next Task Title 2" "Next Task Description 2"
+            displayName: 'Check Previous Task and Create Next Task'
