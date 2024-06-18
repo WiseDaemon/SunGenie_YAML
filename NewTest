@@ -25,9 +25,9 @@ stages:
 
               # Function to check task status and create the next task
               check_and_create_next_task() {
-                previous_task_id=$10
-                next_task_title=$previous_task_id +1
-                next_task_description=$3234
+                previous_task_id=$1
+                next_task_title=$2
+                next_task_description=$3
 
                 # Check if the previous task is closed
                 status=$(curl -s -u ":$PersonalAccessToken" -X GET \
