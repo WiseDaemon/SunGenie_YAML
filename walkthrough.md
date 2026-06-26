@@ -29,6 +29,15 @@ This document details the diagnostic steps, structural routing fixes, model prio
   - Successfully force-pushed the repository to `https://github.com/WiseDaemon/SunGenie_YAML` on the user's account.
   - Copied and pushed the updated [Capabilities Document](https://github.com/WiseDaemon/SunGenie_YAML/blob/main/agent_capabilities.md) to the repository.
 
+### 5. Client-Side Chatbot Simulator for Static Hosting (GitHub Pages)
+- **Problem**: Statically hosted sites on GitHub Pages return `404/405` for POST requests to `/api/chat`. The previous local simulator fallback lacked matching for 6 out of 8 quick actions, and returned incorrect counts for SQL weather data.
+- **Fix**:
+  - Expanded `simulateChatbot` in `index.html` to fully simulate all 8 ML pipelines, with high-fidelity responses, process thoughts, and complete interactive Chart.js objects.
+  - Added precise regex/keyword matching for each capability question, so quick actions render correct charts (bar, scatter, line, doughnut) and database mock telemetry.
+  - Fixed SQL weather matching to correctly identify SELECT statements query targets and return mock weather telemetry rather than generic counts.
+  - Added a `setTimeout` delay before drawing charts to guarantee the canvas element is fully mounted and ready in the DOM.
+  - Applied code block masking before formatting line breaks (`\n` to `<br>`) to keep JSON structure and indentation intact inside pre-formatted blocks.
+
 ---
 
 ## 🔬 Local Verification
