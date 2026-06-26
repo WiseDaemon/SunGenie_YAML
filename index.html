@@ -763,6 +763,10 @@
                 data = simulateChatbot(prompt);
             }
 
+            // Pause before answering completely (1 to 5 seconds randomly)
+            const pauseMs = 1000 + Math.random() * 4000;
+            await new Promise(resolve => setTimeout(resolve, pauseMs));
+
             const loadingMsg = document.getElementById(loadingId);
             try {
                 // Thoughts panel
@@ -898,6 +902,10 @@
             
             // 2. Battery / BESS health
             } else if (lower.includes("battery") || lower.includes("bess") || lower.includes("b1bct1")) {
+                // If it is a comparison request, bypass and pass to comparisons block
+                if (lower.includes("compare") || lower.includes("comparison") || lower.includes("vs")) {
+                    return simulateComparison(lower, thoughts);
+                }
                 thoughts.push("Resolving asset B1BCT1...");
                 thoughts.push("Retrieving battery health metrics...");
                 responseText = `### BESS Health Summary — B1BCT1\n\n*   **Device ID**: \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1\`\n*   **State of Health (SoH)**: **99.4%**\n*   **Total Charge Cycles**: **12**\n*   **Coulombic Efficiency**: **0.98**\n*   **Operating Status**: **Healthy**\n\nNo degradation warnings or actionable thermal tasks detected. Battery capacity remains within nominal specifications.`;
@@ -972,6 +980,9 @@
 
             // 5. Inverter efficiency curve
             } else if (lower.includes("efficiency") || lower.includes("dc-ac") || lower.includes("conversion")) {
+                if (lower.includes("compare") || lower.includes("comparison") || lower.includes("vs")) {
+                    return simulateComparison(lower, thoughts);
+                }
                 thoughts.push("Running Inverter Efficiency Curve analysis...");
                 responseText = `### Inverter Fleet DC-AC Efficiency Curve\n\n*   **Fleet Average Efficiency**: **95.6%**\n*   **Optimal Load Level**: 50% to 80% load factor (efficiency peaks at **96.2%**).\n*   **Underperforming Units**: None. All 2 active inverters (B1INV1, B3INV1) are converting above the 92% alert threshold.\n\nDC-AC conversion parameters are calibrated and running within high efficiency brackets.`;
                 chart = {
@@ -1110,12 +1121,130 @@
                     options: { cutout: "60%" }
                 };
 
-            // 9. Custom / General SQL simulation
+            // 9. Asset Comparison Queries
+            } else if (lower.includes("compare") || lower.includes("comparison") || lower.includes("vs")) {
+                return simulateComparison(lower, thoughts);
+
+            // 10. Specific Methodology Questions
+            } else if (lower.includes("how") && (lower.includes("pr gap") || lower.includes("attribution") || lower.includes("performance ratio"))) {
+                thoughts.push("Loading PR Gap math model...");
+                responseText = `### PR Gap &amp; Performance Ratio Calculation Methodology\n\n*   **Expected Solar Power (\\(P_{\\text{exp}}\\))**:\n    \\[P_{\\text{exp}} = \\text{Capacity} \\cdot \\left(\\frac{\\text{POA}}{1000}\\right) \\cdot (1 - 0.004 \\cdot (T_{\\text{mod}} - 25)) \\cdot \\text{LossFactor}\\]\n    *Where \\(Capacity = 8648\\text{ kW}\\), \\(T_{\\text{mod}}\\) is module temperature, \\(POA\\) is Plane-of-Array irradiance, and \\(LossFactor = 0.85\\).*\n*   **Actual vs Expected Energy Integration**:\n    Aggregated in 5-minute intervals (\\(\\Delta t = \\frac{5}{60}\\text{ hours}\\)) where \\(E = P \\cdot \\Delta t\\).\n*   **PR Actual**:\n    \\[PR = \\frac{E_{\\text{actual}}}{E_{\\text{expected}}}\\]\n*   **Gap Loss Decomposition**:\n    *   *Grid Curtailment*: Lost energy when inverter status = 2.\n    *   *Hardware Inefficiency*: Losses when DC-AC efficiency drops below 92%.\n    *   *Soiling &amp; Shading*: Distributed from residual energy losses using season-calibrated shares.`;
+            } else if (lower.includes("how") && (lower.includes("string") || lower.includes("scb") || lower.includes("outlier") || lower.includes("z-score"))) {
+                thoughts.push("Loading SCB current Z-score model...");
+                responseText = `### String SCB Outlier Detection Methodology\n\n*   **Statistical Outliers**: Retrieves the latest String Combiner Box (SCB) current readings (\\(x_i\\)) for the selected inverter. Computes mean (\\(\\mu\\)) and standard deviation (\\(\\sigma\\)).\n*   **Z-Score Calculation**:\n    \\[Z_i = \\frac{x_i - \\mu}{\\sigma}\\]\n*   **Outlier Flag**: Strings with \\(Z_i < -2.0\\) are flagged as underperforming (e.g. due to localized shading, dirt, or module faults).`;
+            } else if (lower.includes("how") && (lower.includes("soiling") || lower.includes("dust") || lower.includes("cleaning"))) {
+                thoughts.push("Loading change-point soiling rate algorithm...");
+                responseText = `### Unsupervised Soiling Loss Calibration Methodology\n\n*   **Wash Cycle Detection**: Scans daily PR values for sudden positive jumps (\\(PR_{\\text{today}} - PR_{\\text{yesterday}} > 4.0\\%\\)) to identify panel washing events.\n*   **Decline Rate**: Performs a linear regression on daily PR values between consecutive cleaning events. The negative slope (\\(\\%/ \\text{day}\\)) represents the daily soiling loss rate.`;
+            } else if (lower.includes("how") && (lower.includes("battery") || lower.includes("soh") || lower.includes("coulombic") || lower.includes("cycle"))) {
+                thoughts.push("Loading BESS electro-chemical health metrics...");
+                responseText = `### Battery State of Health (SoH) Calculation Methodology\n\n*   **Coulombic Efficiency (\\(\\eta_C\\))**:\n    \\[\\eta_C = \\frac{\\sum |I_{\\text{discharge}}|}{\\sum |I_{\\text{charge}}|}\\]\n*   **Cycle Counting**: A full cycle is equivalent to a cumulative SOC change of 200%:\n    \\[\\text{Cycles} = \\left\\lfloor \\frac{\\sum |\\Delta SOC|}{200} \\right\\rfloor\\]\n*   **State of Health (SoH)**: Estimated from cycle wear using a linear fade coefficient of 0.015% per cycle:\n    \\[SoH = 100\\% - (0.015\\% \\cdot \\text{Cycles})\\]`;
+            } else if (lower.includes("how") && (lower.includes("inverter efficiency") || lower.includes("dc-ac") || lower.includes("conversion"))) {
+                thoughts.push("Loading Inverter DC-AC efficiency curve specs...");
+                responseText = `### Inverter DC-AC Efficiency Curve Methodology\n\n*   **Efficiency**: \\(\\text{Efficiency} = \\frac{P_{\\text{AC}}}{P_{\\text{DC}}} \\cdot 100\\%\\) (where \\(P_{\\text{AC}}\\) is active AC output power and \\(P_{\\text{DC}}\\) is input DC PV power).\n*   **Load Factor Binning**: Bins inverter operating data into 10% load increments relative to the 1430 kW rated capacity per inverter.\n*   **Degradation Alert**: Flags an inverter as underperforming if its average conversion efficiency falls below 92%.`;
+            } else if (lower.includes("how") && (lower.includes("clipping") || lower.includes("irradiance") || lower.includes("correlation") || lower.includes("poa"))) {
+                thoughts.push("Loading POA irradiance vs power correlation math...");
+                responseText = `### Irradiance-Power Correlation &amp; Clipping Methodology\n\n*   **Correlation (\\(R^2\\))**: Calculates the coefficient of determination (\\(R^2\\)) of the linear regression between WMS POA irradiance and aggregate active power.\n*   **Clipping Detection**: Flags clipping events when plant active power stays within 2% of the aggregate rated capacity (8648 kW) while POA irradiance exceeds 800 W/m².`;
+            } else if (lower.includes("how") && (lower.includes("thermal") || lower.includes("hotspot") || lower.includes("noct") || lower.includes("temp"))) {
+                thoughts.push("Loading module NOCT thermal delta model...");
+                responseText = `### Module Thermal Hotspots (NOCT Model) Methodology\n\n*   **Predicted Module Temp (\\(T_{\\text{pred}}\\))**:\n    \\[T_{\\text{pred}} = T_{\\text{ambient}} + \\left(\\frac{\\text{NOCT} - 20}{800}\\right) \\cdot \\text{POA}\\]\n    *Where \\(NOCT = 45^\\circ\\text{C}\\) (Nominal Operating Cell Temperature).*\n*   **Hotspot Criteria**: Flags module anomalies where measured module temperature sensor exceeds predicted temperature by more than 8°C (\\(T_{\\text{measured}} - T_{\\text{pred}} > 8^\\circ\\text{C}\\)).`;
+            } else if (lower.includes("how") && (lower.includes("availability") || lower.includes("curtailment") || lower.includes("daylight"))) {
+                thoughts.push("Loading daylight availability filters...");
+                responseText = `### Daylight Availability &amp; Curtailment Calculation Methodology\n\n*   **Daytime Filter**: Restricts active state classifications (Running, Standby, Grid Curtailment, Scheduled Maintenance, Fault/Trip) strictly to daylight hours where \\(POA > 50\\text{ W/m}^2\\).\n*   **Daylight Availability**:\n    \\[\\text{Availability} = \\frac{\\text{Running Hours}}{\\text{Total Daylight Hours}} \\cdot 100\\%\\]`;
+
+            // 11. Individual Asset Telemetry
+            } else if (lower.includes("mfm 12") || lower.includes("mfm12")) {
+                thoughts.push("Resolving asset B2MFM12...");
+                thoughts.push("Querying latest active power records...");
+                responseText = `### Telemetry Insights — B2MFM12\n\n*   **Asset ID**: \`JAMNAGAR_VIRTUAL_GATEWAY_B2MFM12\`\n*   **Latest Active Power**: **342.5 kW**\n*   **Voltage (R-Phase)**: **415.6 V**\n*   **Current**: **820 A**\n*   **Status**: **Online**`;
+                chart = {
+                    type: "line",
+                    title: "Active Power Trend — B2MFM12",
+                    description: "Plots the active power (kW) trend over recent time intervals for meter B2MFM12.",
+                    data: {
+                        labels: ["16:10", "16:15", "16:20", "16:25", "16:30"],
+                        datasets: [{
+                            label: "Active Power (kW)",
+                            data: [310, 318, 325, 335, 342.5],
+                            borderColor: "#0989b1",
+                            backgroundColor: "rgba(9,137,177,0.12)",
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    }
+                };
+            } else if (lower.includes("pcs1") || lower.includes("pcs 1") || lower.includes("b1pcs1")) {
+                thoughts.push("Resolving asset B1PCS1...");
+                thoughts.push("Querying latest active power records...");
+                responseText = `### Telemetry Insights — B1PCS1\n\n*   **Asset ID**: \`JAMNAGAR_VIRTUAL_GATEWAY_B1PCS1\`\n*   **Latest Active Power**: **1,250 kW**\n*   **Status**: **Online**`;
+                chart = {
+                    type: "line",
+                    title: "Active Power Trend — B1PCS1",
+                    description: "Plots the active power (kW) trend over recent time intervals for PCS B1PCS1.",
+                    data: {
+                        labels: ["16:10", "16:15", "16:20", "16:25", "16:30"],
+                        datasets: [{
+                            label: "Active Power (kW)",
+                            data: [1100, 1150, 1190, 1220, 1250],
+                            borderColor: "#4ab5c4",
+                            backgroundColor: "rgba(74,181,196,0.12)",
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    }
+                };
+            } else if (lower.includes("dccon1") || lower.includes("dccon 1") || lower.includes("b2dccon1")) {
+                thoughts.push("Resolving asset B2DCCON1...");
+                thoughts.push("Querying latest voltage records...");
+                responseText = `### Telemetry Insights — B2DCCON1\n\n*   **Asset ID**: \`JAMNAGAR_VIRTUAL_GATEWAY_B2DCCON1\`\n*   **Input Voltage**: **620 V**\n*   **Active Power**: **45.2 kW**\n*   **Status**: **Online**`;
+                chart = {
+                    type: "line",
+                    title: "Input Voltage Trend — B2DCCON1",
+                    description: "Plots the input voltage (V) trend over recent time intervals for DCCON B2DCCON1.",
+                    data: {
+                        labels: ["16:10", "16:15", "16:20", "16:25", "16:30"],
+                        datasets: [{
+                            label: "Input Voltage (V)",
+                            data: [610, 615, 612, 618, 620],
+                            borderColor: "#4ab5c4",
+                            backgroundColor: "rgba(74,181,196,0.12)",
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    }
+                };
+            } else if (lower.includes("wms1") || lower.includes("wms 1") || lower.includes("ppcwms1") || lower.includes("meteorological")) {
+                thoughts.push("Resolving asset PPCWMS1...");
+                thoughts.push("Querying latest temperature logs...");
+                responseText = `### Telemetry Insights — PPCWMS1 (Meteorological Station)\n\n*   **Asset ID**: \`JAMNAGAR_VIRTUAL_GATEWAY_PPCWMS1\`\n*   **Ambient Temperature**: **34.8 °C**\n*   **Module Temperature**: **45.2 °C**\n*   **POA Irradiance**: **488 W/m²**\n*   **Status**: **Online**`;
+                chart = {
+                    type: "line",
+                    title: "Ambient vs Module Temp (°C)",
+                    description: "Plots ambient vs module temperature sensor trends over recent intervals.",
+                    data: {
+                        labels: ["16:10", "16:15", "16:20", "16:25", "16:30"],
+                        datasets: [{
+                            label: "Ambient Temp",
+                            data: [34.88, 34.84, 34.85, 34.81, 34.82],
+                            borderColor: "#8ab833",
+                            fill: false
+                        }, {
+                            label: "Module Temp",
+                            data: [44.5, 44.8, 45.0, 45.1, 45.2],
+                            borderColor: "#ef4444",
+                            fill: false
+                        }]
+                    }
+                };
+            } else if (lower.includes("list assets") || lower.includes("all assets") || lower.includes("assets by type") || lower.includes("show all meters")) {
+                thoughts.push("Querying active Jamnagar Solar assets list...");
+                responseText = `### Jamnagar Solar Facility — Active Assets Grouped by Type\n\n*   **Batteries (7 BESS Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT2\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT3\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2BCT1\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2BCT2\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2BCT3\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B3BCT2\`\n*   **Inverters (2 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1INV1\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B3INV1\`\n*   **Power Meters (MFM — 19 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1MFM1\` (Grid-tie), \`B1MFM2\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2MFM1\` through \`B2MFM16\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B3MFM1\`, \`B3MFM2\`, \`B3MFM3\`\n*   **PCS (Power Conversion System — 3 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1PCS1\`, \`B2PCS1\`, \`B3PCS1\`\n*   **DC Converters (3 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2DCCON1\`, \`B2DCCON2\`, \`B2DCCON3\`\n*   **Weather Stations (1 WMS Unit)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_PPCWMS1\``;
+
+            // 12. Custom / General SQL simulation
             } else if (lower.includes("sql") || lower.includes("select")) {
                 thoughts.push("Executing custom SQL query simulation...");
                 responseText = `**SQL Query Results:**\n\`\`\`json\n[\n  {"device_group": "WEATHER", "count": 2400},\n  {"device_group": "INVERTER", "count": 4800},\n  {"device_group": "BESS", "count": 16800},\n  {"device_group": "METER", "count": 50400}\n]\n\`\`\``;
 
-            // 10. Capabilities & Calculation methodology questions
+            // 13. Capabilities & Calculation methodology questions
             } else if (lower.includes("what can you do") || lower.includes("capabilities") || lower.includes("help") || lower.includes("how do you") || lower.includes("how does") || lower.includes("how is") || lower.includes("methodology") || lower.includes("calculate") || lower.includes("calibrate")) {
                 thoughts.push("Loading capabilities and calculation methodology...");
                 responseText = `### JioSunGenie eAnalytiX Capabilities &amp; Methodology\n\nI am a telemetry-calibrated O&amp;M assistant, calibrated on **8 active ML pipelines** and directly connected to the Jamnagar SQLite database.\n\n#### 🛠️ Core Capabilities\n1. **PR Gap Loss Attribution**: Calculates performance ratio and breaks down losses (Soiling, Shading, Hardware, Grid Curtailment).\n2. **String Outlier Check (SCB)**: Uses Z-score calculations to detect faulty/underperforming solar strings.\n3. **Unsupervised Soiling Loss Calibration**: Estimates daily dust accumulation rates using change-point analysis of panel washing cycles.\n4. **BESS Health Monitor (SoH)**: Calculates coulombic efficiency and estimates BESS capacity wear over cycles.\n5. **Inverter DC-AC Efficiency**: Bins conversion efficiency by load factor to spot underperforming units.\n6. **Irradiance-Power Correlation**: Computes POA R² and detects power clipping.\n7. **Thermal Hotspot Detection**: Flags module anomalies by comparing measured temperature to the NOCT cell temperature model.\n8. **Daylight Availability &amp; Curtailment**: Calculates availability restricted to active daylight windows (POA &gt; 50 W/m²).\n\n#### 🧮 Mathematical Formulas &amp; Models\n*   **Performance Ratio**: \\(PR = \\frac{E_{\\text{actual}}}{E_{\\text{expected}}}\\)\n*   **Expected Power**: \\(P_{\\text{exp}} = \\text{Capacity} \\cdot \\left(\\frac{\\text{POA}}{1000}\\right) \\cdot (1 - 0.004 \\cdot (T_{\\text{mod}} - 25)) \\cdot \\text{LossFactor}\\)\n*   **String Current Z-Score**: \\(Z_i = \\frac{x_i - \\mu}{\\sigma}\\) (anomalies flagged when \\(Z_i &lt; -2.0\\))\n*   **BESS Coulombic Efficiency**: \\(\\eta_C = \\frac{\\sum |I_{\\text{discharge}}|}{\\sum |I_{\\text{charge}}|}\\)\n*   **Predicted Module Temp**: \\(T_{\\text{pred}} = T_{\\text{ambient}} + \\left(\\frac{\\text{NOCT} - 20}{800}\\right) \\cdot \\text{POA}\\) (hotspots flagged where \\(T_{\\text{measured}} - T_{\\text{pred}} &gt; 8^\\circ\\text{C}\\))\n\n*I use **Gemma 4 26B** as my primary reasoning model, with Nvidia Ising Calibration 35B and Gemma 3 12B as dedicated fallbacks.*`;
@@ -1126,6 +1255,108 @@
                 responseText = `Hello! I am your SunGenie O&amp;M AI Agent. The local API server is currently offline or hosted in demo mode (GitHub Pages), so I am responding using my built-in JS emulator.\n\nHere are some queries I am configured to answer:\n- **Battery health**: *"What is the health and cycle count of battery B1BCT1?"*\n- **Inverter efficiency**: *"What is the inverter fleet DC-AC conversion efficiency?"*\n- **SQL queries**: *"SQL Weather data"* or any custom \`SELECT\` statement.\n\nAll calculation methodology details (PR Gap, Z-Score, Coulombic efficiency, NOCT module temperature model, and daylight availability) can be found in the repository's [Capabilities Document](https://github.com/WiseDaemon/SunGenie_YAML/blob/main/agent_capabilities.md).`;
             }
 
+            return { response: responseText, thoughts, chart };
+        }
+
+        // Helper to simulate asset comparisons
+        function simulateComparison(lower, thoughts) {
+            let responseText = "";
+            let chart = null;
+            if (lower.includes("battery") || lower.includes("bess") || lower.includes("bct")) {
+                thoughts.push("Resolving BESS assets for comparison...");
+                thoughts.push("Fetching SOC and SoH history for comparison...");
+                responseText = `### BESS Comparison: B1BCT1 vs B2BCT1 vs B2BCT3\n\n*   **B1BCT1**: SoH = **99.4%**, Cycles = **12**, Status = **Healthy**\n*   **B2BCT1**: SoH = **98.2%**, Cycles = **120**, Status = **Healthy**\n*   **B2BCT3**: SoH = **97.8%**, Cycles = **146**, Status = **Healthy**\n\nAll units are operating within nominal thermodynamic and coulombic efficiency limits. B1BCT1 shows the lowest degradation due to its low cycle history.`;
+                chart = {
+                    type: "bar",
+                    title: "BESS State of Health Comparison (%)",
+                    description: "Compares State of Health (SoH) across multiple Battery Capacity Tracker (BCT) units.",
+                    data: {
+                        labels: ["B1BCT1", "B2BCT1", "B2BCT3"],
+                        datasets: [{
+                            label: "SoH %",
+                            data: [99.4, 98.2, 97.8],
+                            backgroundColor: ["rgba(138,184,51,0.75)", "rgba(9,137,177,0.75)", "rgba(74,181,196,0.75)"],
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { scales: { y: { min: 90, max: 100 } } }
+                };
+            } else if (lower.includes("inverter") || lower.includes("inv") || lower.includes("efficiency")) {
+                thoughts.push("Resolving inverter assets...");
+                thoughts.push("Fetching efficiency metrics...");
+                responseText = `### Inverter Comparison: B1INV1 vs B3INV1\n\n*   **B1INV1**: Fleet Efficiency = **95.8%**, Status = **Normal**\n*   **B3INV1**: Fleet Efficiency = **95.4%**, Status = **Normal**\n\nBoth inverters are operating well above the 92% efficiency alert threshold, running optimal conversion stages.`;
+                chart = {
+                    type: "bar",
+                    title: "Inverter Conversion Efficiency Comparison (%)",
+                    description: "Compares aggregate conversion efficiency across all active inverters.",
+                    data: {
+                        labels: ["B1INV1", "B3INV1"],
+                        datasets: [{
+                            label: "Efficiency %",
+                            data: [95.8, 95.4],
+                            backgroundColor: ["rgba(138,184,51,0.75)", "rgba(9,137,177,0.75)"],
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { scales: { y: { min: 90, max: 100 } } }
+                };
+            } else if (lower.includes("meter") || lower.includes("mfm") || lower.includes("power")) {
+                thoughts.push("Resolving MFM power meters...");
+                thoughts.push("Retrieving active power telemetry...");
+                responseText = `### Meter Power Comparison: B1MFM1 vs B3MFM2\n\n*   **B1MFM1 (Grid Tie Meter)**: Active Power = **4,150 kW**, Power Factor = **0.99**\n*   **B3MFM2 (Auxiliary Meter)**: Active Power = **380 kW**, Power Factor = **0.97**`;
+                chart = {
+                    type: "bar",
+                    title: "Active Power Comparison (kW)",
+                    description: "Compares the active power output or consumption between key power meters.",
+                    data: {
+                        labels: ["B1MFM1", "B3MFM2"],
+                        datasets: [{
+                            label: "Active Power (kW)",
+                            data: [4150, 380],
+                            backgroundColor: ["rgba(9,137,177,0.75)", "rgba(74,181,196,0.75)"],
+                            borderRadius: 4
+                        }]
+                    }
+                };
+            } else if (lower.includes("dccon") || lower.includes("converter")) {
+                thoughts.push("Resolving DC converter telemetry...");
+                thoughts.push("Comparing input voltages...");
+                responseText = `### DC Converter Comparison: B2DCCON1 vs B2DCCON2 vs B2DCCON3\n\n*   **B2DCCON1**: Input Voltage = **620 V**, Current = **15 A**\n*   **B2DCCON2**: Input Voltage = **618 V**, Current = **14.8 A**\n*   **B2DCCON3**: Input Voltage = **622 V**, Current = **15.1 A**`;
+                chart = {
+                    type: "bar",
+                    title: "DC Converter Voltage Comparison (V)",
+                    description: "Compares input voltage levels across active DC converters.",
+                    data: {
+                        labels: ["B2DCCON1", "B2DCCON2", "B2DCCON3"],
+                        datasets: [{
+                            label: "Input Voltage (V)",
+                            data: [620, 618, 622],
+                            backgroundColor: ["rgba(138,184,51,0.75)", "rgba(9,137,177,0.75)", "rgba(74,181,196,0.75)"],
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { scales: { y: { min: 500, max: 700 } } }
+                };
+            } else {
+                // Default to inverter comparison
+                thoughts.push("Comparing all inverter assets...");
+                responseText = `### Inverter Comparison: B1INV1 vs B3INV1\n\n*   **B1INV1**: Fleet Efficiency = **95.8%**, Status = **Normal**\n*   **B3INV1**: Fleet Efficiency = **95.4%**, Status = **Normal**\n\nBoth inverters are operating well above the 92% efficiency alert threshold, running optimal conversion stages.`;
+                chart = {
+                    type: "bar",
+                    title: "Inverter Conversion Efficiency Comparison (%)",
+                    description: "Compares aggregate conversion efficiency across all active inverters.",
+                    data: {
+                        labels: ["B1INV1", "B3INV1"],
+                        datasets: [{
+                            label: "Efficiency %",
+                            data: [95.8, 95.4],
+                            backgroundColor: ["rgba(138,184,51,0.75)", "rgba(9,137,177,0.75)"],
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { scales: { y: { min: 90, max: 100 } } }
+                };
+            }
             return { response: responseText, thoughts, chart };
         }
 
