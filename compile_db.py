@@ -4,30 +4,13 @@ import csv
 import json
 import sqlite3
 from datetime import datetime
+from utils import determine_device_group
 
-DATA_DIR = r"C:\LLM\SunGenie data"
-DB_PATH = r"C:\Users\saxen\.gemini\antigravity\brain\0f95910d-307c-40cb-b421-02dc23fbd684\scratch\sungenie_telemetry.db"
+import config
+DATA_DIR = config.DATA_DIR
+DB_PATH = config.DB_PATH
 
-def determine_device_group(meter_id):
-    if not meter_id:
-        return 'OTHER'
-    parts = meter_id.split('_')
-    suffix = parts[-1]
-    if 'INV' in suffix:
-        return 'INVERTER'
-    elif 'MFM' in suffix:
-        return 'METER'
-    elif 'BCT' in suffix:
-        return 'BESS'
-    elif 'PCS' in suffix:
-        return 'PCS'
-    elif 'WMS' in suffix or 'WEATHER' in suffix or 'WS' in suffix:
-        return 'WEATHER'
-    elif 'PQM' in suffix:
-        return 'PQM'
-    elif 'DCCON' in suffix:
-        return 'DCCON'
-    return suffix
+
 
 def parse_timestamp(ts_str):
     if not ts_str:
@@ -128,14 +111,14 @@ def main():
                 type_idx = header_map.get('type')
                 rec_type = row[type_idx] if type_idx is not None and type_idx < len(row) else 'UNKNOWN'
                 
-                time_idx = header_map.get('time') or header_map.get('tms')
+                time_idx = header_map['time'] if 'time' in header_map else header_map.get('tms')
                 raw_time = row[time_idx] if time_idx is not None and time_idx < len(row) else None
                 formatted_time = parse_timestamp(raw_time)
                 
-                meter_idx = header_map.get('meterId')
+                meter_idx = header_map['meterId'] if 'meterId' in header_map else None
                 meter_id = row[meter_idx] if meter_idx is not None and meter_idx < len(row) else None
                 
-                device_uid_idx = header_map.get('deviceUID')
+                device_uid_idx = header_map['deviceUID'] if 'deviceUID' in header_map else None
                 device_uid = row[device_uid_idx] if device_uid_idx is not None and device_uid_idx < len(row) else None
                 
                 device_group = determine_device_group(meter_id)

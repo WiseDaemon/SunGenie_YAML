@@ -3,11 +3,11 @@ import sys
 import asyncio
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 import google.generativeai as genai
-from dotenv import load_dotenv
-load_dotenv(dotenv_path="C:/LLM/.env")
+import config
+from utils import determine_device_group
 
 sys.path.append(os.path.dirname(__file__))
 import ml_pipelines
@@ -16,52 +16,51 @@ import agent_setup
 MODEL_NAME = "gemma-4-26b-a4b-it"
 
 # Nvidia API credentials
-ISING_KEY  = "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"
-LLAMA_KEY  = "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"
-NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+ISING_KEY  = config.NVIDIA_ISING_KEY
+LLAMA_KEY  = config.NVIDIA_LLAMA_KEY
+NVIDIA_URL = config.NVIDIA_URL
 
 def resolve_timeframe(prompt_lower):
     """Parses relative time references into start_time and end_time ISO strings."""
-    # Current time: 2026-06-26 14:50:23
-    base_time = datetime(2026, 6, 26, 14, 50, 23)
-    
-    start_time = None
-    end_time = None
-    
+    now   = datetime.now()
+    today = now.date()
+
+    def day_range(d):
+        return f"{d} 00:00:00", f"{d} 23:59:59"
+
+    start_time = end_time = None
+
     if "today" in prompt_lower:
-        start_time = "2026-06-24 00:00:00"
-        end_time = "2026-06-24 23:59:59"
+        start_time, end_time = day_range(today)
     elif "yesterday" in prompt_lower:
-        start_time = "2026-06-24 00:00:00"
-        end_time = "2026-06-24 23:59:59"
+        start_time, end_time = day_range(today - timedelta(days=1))
     elif "last 7 days" in prompt_lower or "last week" in prompt_lower:
-        start_time = "2026-06-18 00:00:00"
-        end_time = "2026-06-24 23:59:59"
+        start_time = str(today - timedelta(days=6)) + " 00:00:00"
+        end_time   = str(today) + " 23:59:59"
     elif "last 30 days" in prompt_lower or "last month" in prompt_lower:
-        start_time = "2026-06-01 00:00:00"
-        end_time = "2026-06-24 23:59:59"
-    elif "june 24" in prompt_lower or "24-06" in prompt_lower or "24th of june" in prompt_lower:
-        start_time = "2026-06-24 00:00:00"
-        end_time = "2026-06-24 23:59:59"
-    elif "june 22" in prompt_lower:
-        start_time = "2026-06-22 00:00:00"
-        end_time = "2026-06-22 23:59:59"
-    elif "june 20" in prompt_lower:
-        start_time = "2026-06-20 00:00:00"
-        end_time = "2026-06-20 23:59:59"
-        
+        start_time = str(today - timedelta(days=29)) + " 00:00:00"
+        end_time   = str(today) + " 23:59:59"
+
+    # Named date references
+    for pattern, _ in [("june 24", None), ("june 22", None), ("june 20", None)]:
+        if pattern in prompt_lower:
+            try:
+                target = datetime.strptime(pattern, "%B %d").replace(year=today.year).date()
+                start_time, end_time = day_range(target)
+            except ValueError:
+                pass
+            break
+
+    # Time-of-day range
     match_hours = re.search(r'between\s+(\d+)\s*(am|pm)\s+and\s+(\d+)\s*(am|pm)', prompt_lower)
     if match_hours:
         h1, p1, h2, p2 = match_hours.groups()
-        hr1 = int(h1)
-        if p1 == "pm" and hr1 < 12: hr1 += 12
-        if p1 == "am" and hr1 == 12: hr1 = 0
-        hr2 = int(h2)
-        if p2 == "pm" and hr2 < 12: hr2 += 12
-        if p2 == "am" and hr2 == 12: hr2 = 0
-        start_time = f"2026-06-24 {hr1:02d}:00:00"
-        end_time = f"2026-06-24 {hr2:02d}:00:00"
-        
+        hr1 = int(h1) + (12 if p1 == "pm" and int(h1) < 12 else 0)
+        hr2 = int(h2) + (12 if p2 == "pm" and int(h2) < 12 else 0)
+        base_date = start_time[:10] if start_time else str(today)
+        start_time = f"{base_date} {hr1:02d}:00:00"
+        end_time   = f"{base_date} {hr2:02d}:00:00"
+
     return start_time, end_time
 
 
@@ -464,7 +463,6 @@ class Agent:
             return AgentResponse(f"**SQL Query Results:**\n```json\n{res_str}\n```", thoughts)
 
         # ── Dynamic Asset extractor & resolver ─────────────────────────────────
-        import re
         db_assets = [
             "B1BCT1", "B1BCT2", "B1BCT3", "B2BCT1", "B2BCT2", "B2BCT3", "B3BCT2",
             "B1INV1", "B3INV1",
@@ -724,26 +722,7 @@ class Agent:
                     results[asset] = get_generic_asset_data(asset, limit=5)
                 context_data = f"[Diagnostics: Telemetry_Data={results}]"
                 
-                def determine_group_from_asset(asset_id):
-                    if not asset_id:
-                        return 'OTHER'
-                    suffix = asset_id.split('_')[-1]
-                    if 'INV' in suffix:
-                        return 'INVERTER'
-                    elif 'MFM' in suffix:
-                        return 'METER'
-                    elif 'BCT' in suffix:
-                        return 'BESS'
-                    elif 'PCS' in suffix:
-                        return 'PCS'
-                    elif 'WMS' in suffix or 'WEATHER' in suffix or 'WS' in suffix:
-                        return 'WEATHER'
-                    elif 'PQM' in suffix:
-                        return 'PQM'
-                    elif 'DCCON' in suffix:
-                        return 'DCCON'
-                    return 'OTHER'
-                    
+
                 def get_latest_value(record, grp):
                     if not record:
                         return 0.0
@@ -785,7 +764,7 @@ class Agent:
 
                 label_val_pairs = []
                 first_asset = target_assets[0]
-                first_group = determine_group_from_asset(first_asset)
+                first_group = determine_device_group(first_asset)
                 metric_label = get_metric_label(first_group)
                 
                 for asset in target_assets:
@@ -801,7 +780,7 @@ class Agent:
                     asset = target_assets[0]
                     records = results[asset]
                     if records:
-                        grp = determine_group_from_asset(asset)
+                        grp = determine_device_group(asset)
                         field = "activePower"
                         for col in ["activePower", "bessSOC", "ambientTemperature", "voltageRPhase", "inputVoltage"]:
                             if col in records[0] and records[0][col] is not None:
@@ -1025,6 +1004,45 @@ class Agent:
                     }
                 }
             }
+
+        # ── ARC-03: LLM intent-classification fallback ─────────────────────────
+        # If no keyword/asset path produced diagnostics, ask a fast model to
+        # classify the query and route it to the right pipeline, so natural
+        # paraphrases ("how dirty are the panels?", "is the battery degrading?")
+        # still return real telemetry instead of a generic answer.
+        if not context_data and not found_assets:
+            try:
+                clf_prompt = (
+                    "Classify this solar plant O&M query into exactly ONE label from: "
+                    "PR_GAP | SCB_OUTLIERS | BESS_HEALTH | INVERTER_EFFICIENCY | "
+                    "IRRADIANCE_CORRELATION | THERMAL_ANOMALY | CURTAILMENT | "
+                    "SOILING_ROI | FORECAST | GENERAL. "
+                    "Respond with ONLY the label, nothing else.\n\n"
+                    f"Query: {prompt}"
+                )
+                clf_model = genai.GenerativeModel(model_name="gemini-2.0-flash")
+                clf_resp = await loop.run_in_executor(None, lambda: clf_model.generate_content(clf_prompt))
+                intent = (getattr(clf_resp, "text", "") or "").strip().upper()
+                thoughts.append(f"Intent classifier routed query to: {intent}")
+
+                dispatch = {
+                    "PR_GAP": lambda: ml_pipelines.get_expected_vs_actual_generation(start_time=start_time, end_time=end_time),
+                    "SCB_OUTLIERS": lambda: ml_pipelines.detect_scb_outliers(start_time=start_time, end_time=end_time),
+                    "BESS_HEALTH": lambda: ml_pipelines.get_bess_health(start_time=start_time, end_time=end_time),
+                    "INVERTER_EFFICIENCY": lambda: ml_pipelines.analyze_inverter_efficiency(start_time=start_time, end_time=end_time),
+                    "IRRADIANCE_CORRELATION": lambda: ml_pipelines.analyze_irradiance_power_correlation(start_time=start_time, end_time=end_time),
+                    "THERMAL_ANOMALY": lambda: ml_pipelines.detect_thermal_anomalies(start_time=start_time, end_time=end_time),
+                    "CURTAILMENT": lambda: ml_pipelines.analyze_grid_curtailment(start_time=start_time, end_time=end_time),
+                    "SOILING_ROI": lambda: ml_pipelines.calibrate_cleaning_roi(start_time=start_time, end_time=end_time),
+                    "FORECAST": lambda: ml_pipelines.get_generation_and_bess_forecast(start_time=start_time, end_time=end_time),
+                }
+                if intent in dispatch:
+                    result = await loop.run_in_executor(None, dispatch[intent])
+                    if isinstance(result, list):
+                        result = result[:12]   # keep forecast/series payloads compact
+                    context_data = f"[Diagnostics: {intent}={result}]"
+            except Exception as clf_err:
+                thoughts.append(f"Intent classifier unavailable ({str(clf_err)[:60]}).")
 
         # ── Build LLM message ──────────────────────────────────────────────────
         system_instruction = (

@@ -3,12 +3,14 @@ import json
 import os
 import sys
 from datetime import datetime
+import hashlib
 
 # Ensure scratch directory is in python path
 sys.path.append(os.path.dirname(__file__))
 import ml_pipelines
+import config
 
-DB_PATH = r"C:\Users\saxen\.gemini\antigravity\brain\0f95910d-307c-40cb-b421-02dc23fbd684\scratch\sungenie_telemetry.db"
+DB_PATH = config.DB_PATH
 
 # 1. SQL Query execution tool
 def execute_sql_query(sql_query: str) -> str:
@@ -51,25 +53,59 @@ def execute_sql_query(sql_query: str) -> str:
     - rainfall (REAL)
     - scb_currents (TEXT, JSON string containing String Combiner Box currents)
     """
-    query_upper = sql_query.strip().upper()
+    # --- SEC-05: query hardening --------------------------------------------
+    MAX_SQL_ROWS = 1000          # hard cap on rows scanned/returned
+    cleaned = sql_query.strip().rstrip(";").strip()
+    query_upper = cleaned.upper()
+
     if not query_upper.startswith("SELECT"):
         return json.dumps({"error": "Only SELECT queries are allowed for security."})
-        
+
+    # Reject stacked/multiple statements.
+    if ";" in cleaned:
+        return json.dumps({"error": "Only a single SELECT statement is allowed."})
+
+    # Block statement types and functions that can mutate state, read the
+    # filesystem, or attach other databases (defence in depth on top of SELECT-only).
+    BLOCKED = ("ATTACH", "DETACH", "PRAGMA", "INSERT", "UPDATE", "DELETE",
+               "DROP", "ALTER", "CREATE", "REPLACE", "VACUUM", "REINDEX",
+               "LOAD_EXTENSION", "WRITEFILE", "READFILE", "EDITDIST3")
+    if any(tok in query_upper for tok in BLOCKED):
+        return json.dumps({"error": "Query contains a disallowed keyword."})
+
+    # Wrap the user query so an absolute row cap always applies, regardless of
+    # any LIMIT the caller did or did not include.
+    capped_query = f"SELECT * FROM ({cleaned}) AS _sub LIMIT {MAX_SQL_ROWS}"
+
+    conn = None
     try:
         conn = sqlite3.connect(DB_PATH)
+        conn.enable_load_extension(False)        # no extension loading
+        conn.execute("PRAGMA query_only = ON;")  # read-only connection
+
+        # Abort runaway queries: the handler fires every 100k VM instructions
+        # and aborts once the budget is exhausted (~ a few seconds of CPU).
+        budget = {"n": 0}
+        def _watchdog():
+            budget["n"] += 1
+            return 1 if budget["n"] > 2000 else 0   # ~200M instructions
+        conn.set_progress_handler(_watchdog, 100000)
+
         cursor = conn.cursor()
-        cursor.execute(sql_query)
+        cursor.execute(capped_query)
         columns = [col[0] for col in cursor.description]
         rows = cursor.fetchall()
-        conn.close()
-        
+
         result = [dict(zip(columns, row)) for row in rows]
-        # Return truncated list if too long to prevent token overflow
+        # Truncate the *serialised* payload to avoid token overflow downstream.
         if len(result) > 50:
-            return json.dumps(result[:50]) + "\n... (truncated, total " + str(len(result)) + " rows)"
+            return json.dumps(result[:50]) + "\n... (truncated, showing 50 of " + str(len(result)) + " rows; max " + str(MAX_SQL_ROWS) + ")"
         return json.dumps(result)
     except Exception as e:
         return json.dumps({"error": str(e)})
+    finally:
+        if conn is not None:
+            conn.close()
 
 # 2. PR Gap analysis tool
 def get_pr_gap_analysis(date_str: str = None) -> str:
@@ -131,12 +167,12 @@ def generate_actionable_task_payload(title: str, severity: str, asset_id: str, d
         description: Detailed explanation of the fault and recommended action.
     """
     payload = {
-        "ticketId": f"TK-{hash(title) % 1000000:06d}",
+        "ticketId": f"TK-{hashlib.md5(title.encode()).hexdigest()[:6].upper()}",
         "title": title,
         "severity": severity,
         "assetId": asset_id,
         "description": description,
-        "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ") if 'datetime' in globals() else "2026-06-24T17:52:00Z",
+        "created_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "status": "Open",
         "aging_days": 0,
         "source": "AI_Agent_Diagnostic"

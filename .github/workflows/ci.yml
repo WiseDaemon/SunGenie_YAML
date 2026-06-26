@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Byte-compile (syntax check)
+        run: python -m compileall -q .
+
+      - name: Run tests
+        env:
+          # Dummy keys so imports that read env don't fail in CI.
+          GEMINI_API_KEY: ci-dummy
+          NVIDIA_ISING_KEY: ci-dummy
+          NVIDIA_LLAMA_KEY: ci-dummy
+          SUNGENIE_API_KEY: ci-dummy
+          SUNGENIE_ENV_PATH: /dev/null
+        run: pytest -q

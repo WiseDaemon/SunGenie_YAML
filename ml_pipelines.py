@@ -6,22 +6,36 @@ import time
 import numpy as np
 import pandas as pd
 from datetime import datetime
+import config
 
-DB_PATH = r"C:\Users\saxen\.gemini\antigravity\brain\0f95910d-307c-40cb-b421-02dc23fbd684\scratch\sungenie_telemetry.db"
+DB_PATH = config.DB_PATH
+
+# --- Shared physical / heuristic constants (LOG-01b) ------------------------
+# Single source of truth so curtailment energy is computed the same way
+# everywhere (previously 8648 kW in PR-gap vs 4000 kW in curtailment).
+PLANT_CAPACITY_KW = 8648.0     # AC nameplate capacity
+LOSS_FACTOR = 0.85             # system loss factor for the expected-generation model
+AVG_CURTAILED_KW = 4000.0      # assumed avg power lost per curtailment interval
+HARDWARE_LOSS_SHARE = 0.25     # heuristic BOS loss share (cabling, transformer) — an assumption
+
+import threading
 
 # TTL Cache Decorator
 def ttl_cache(seconds=5):
     cache = {}
+    lock = threading.Lock()
     def decorator(func):
         def wrapper(*args, **kwargs):
             key = (args, tuple(sorted(kwargs.items())))
             now = time.time()
-            if key in cache:
-                val, expiry = cache[key]
-                if now < expiry:
-                    return val
+            with lock:
+                if key in cache:
+                    val, expiry = cache[key]
+                    if now < expiry:
+                        return val
             val = func(*args, **kwargs)
-            cache[key] = (val, now + seconds)
+            with lock:
+                cache[key] = (val, now + seconds)
             return val
         return wrapper
     return decorator
@@ -83,7 +97,7 @@ def get_expected_vs_actual_generation(date_str=None, start_time=None, end_time=N
     df_w['planeOfArraySensor01'] = df_w['planeOfArraySensor01'].fillna(0)
     df_w['moduleTemperatureSensor01'] = df_w['moduleTemperatureSensor01'].fillna(25)
     
-    expected_power = 8648.0 * (df_w['planeOfArraySensor01'] / 1000.0) * (1 - 0.004 * (df_w['moduleTemperatureSensor01'] - 25.0)) * 0.85
+    expected_power = PLANT_CAPACITY_KW * (df_w['planeOfArraySensor01'] / 1000.0) * (1 - 0.004 * (df_w['moduleTemperatureSensor01'] - 25.0)) * LOSS_FACTOR
     # clip at 0
     expected_power = np.clip(expected_power, 0, None)
     expected_kwh = expected_power.mean() * (len(df_w) * 5 / 60) # average kW * total hours
@@ -112,9 +126,11 @@ def get_expected_vs_actual_generation(date_str=None, start_time=None, end_time=N
         
     # Calibrate gap attribution
     if gap_kwh > 0:
-        curtailment_share = min(1.0, (curtailment_hours * 8648.0) / gap_kwh)
-        hardware_share = 0.25 # standard hardware component losses
-        soiling_share = 0.45  # typical dry season dust component
+        curtailment_share = min(1.0, (curtailment_hours * AVG_CURTAILED_KW) / gap_kwh)
+        hardware_share = HARDWARE_LOSS_SHARE # heuristic BOS loss share (assumption)
+        soiling_calib = calibrate_soiling_rate(start_time, end_time)
+        measured_soiling = abs(soiling_calib.get("avg_daily_soiling_rate_pct", 0.22))
+        soiling_share = min(0.60, measured_soiling * 2.0)
         shading_share = 1.0 - (curtailment_share + hardware_share + soiling_share)
         shading_share = max(0.05, shading_share)
         
@@ -134,7 +150,16 @@ def get_expected_vs_actual_generation(date_str=None, start_time=None, end_time=N
         "actual_kwh": round(float(actual_kwh), 2),
         "gap_kwh": round(float(gap_kwh), 2),
         "pr_actual": round(float(pr_actual), 4),
-        "attribution": attribution
+        "attribution": attribution,
+        # LOG-01b: surface the (partly heuristic) assumptions behind the split.
+        "assumptions": {
+            "plant_capacity_kw": PLANT_CAPACITY_KW,
+            "loss_factor": LOSS_FACTOR,
+            "avg_curtailed_kw": AVG_CURTAILED_KW,
+            "hardware_loss_share": HARDWARE_LOSS_SHARE,
+            "soiling_share_source": "measured daily soiling rate (calibrate_soiling_rate)",
+            "note": "Hardware and shading shares are heuristic assumptions, not directly measured."
+        }
     }
 
 # 2. String Current Outlier Analysis (Z-score)
@@ -298,13 +323,18 @@ def get_bess_health(bess_id="JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", start_time=None, 
     conn.close()
     
     if df.empty or len(df) < 20:
+        # LOG-05: do NOT fabricate a healthy reading when telemetry is thin —
+        # that would mask a dead/offline unit as "Healthy". Signal low confidence.
         return {
-            "coulombic_efficiency": 0.98,
-            "state_of_health_pct": 99.4,
-            "total_cycles": 12,
-            "status": "Healthy"
+            "bess_id": bess_id,
+            "coulombic_efficiency": None,
+            "state_of_health_pct": None,
+            "total_cycles": None,
+            "status": "Insufficient Data",
+            "confidence": "low",
+            "soh_method": "n/a — not enough telemetry in the selected window"
         }
-        
+
     # Coulombic Efficiency = Sum(|I_discharge|) / Sum(|I_charge|)
     # In the raw data: bessCurrent positive indicates charging, negative indicates discharging (or vice versa)
     df['bessCurrent'] = df['bessCurrent'].fillna(0)
@@ -327,8 +357,9 @@ def get_bess_health(bess_id="JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", start_time=None, 
     total_cycles = max(1, total_cycles)
     
     # State of Health (SoH) estimation
-    # Assume a very basic linear capacity fade: 100% - (0.015% * cycles)
-    soh = 100.0 - (0.015 * total_cycles)
+    base_fade = 0.015 * total_cycles
+    efficiency_penalty = (1.0 - ce) * 10.0
+    soh = 100.0 - (base_fade + efficiency_penalty)
     soh = max(70.0, min(100.0, soh))
     
     status = "Healthy"
@@ -342,7 +373,12 @@ def get_bess_health(bess_id="JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", start_time=None, 
         "coulombic_efficiency": round(ce, 3),
         "state_of_health_pct": round(soh, 2),
         "total_cycles": total_cycles,
-        "status": status
+        "status": status,
+        # LOG-02b: be explicit that SoH is a model estimate, not a measured
+        # capacity test, so the UI/agent can label it accordingly.
+        "estimated": True,
+        "confidence": "medium",
+        "soh_method": "estimated: cycle fade (0.015%/cycle) + Coulombic-efficiency proxy; not a capacity test"
     }
 
 # 5. Inverter DC-AC Efficiency Curve Analysis
@@ -684,8 +720,8 @@ def analyze_grid_curtailment(start_time=None, end_time=None):
     running_hours = category_summary.get('Running', 0.0)
     availability_pct = (running_hours / total_daytime_hours * 100.0) if total_daytime_hours > 0 else 0.0
 
-    # Curtailed energy estimate: curtailment_hours * (assumed avg curtailed power = 4000 kW)
-    curtailed_kwh = round(curtailment_hours * 4000.0, 1)
+    # Curtailed energy estimate uses the shared AVG_CURTAILED_KW assumption (LOG-01b)
+    curtailed_kwh = round(curtailment_hours * AVG_CURTAILED_KW, 1)
 
     # Daily curtailment events
     df['date'] = pd.to_datetime(df['timestamp_x']).dt.date.astype(str)
@@ -708,17 +744,6 @@ def analyze_grid_curtailment(start_time=None, end_time=None):
         "category_breakdown_hours": category_summary,
         "daily_curtailment": daily_list
     }
-
-
-    return {
-        "plant_availability_pct": round(availability_pct, 2),
-        "total_curtailment_hours": round(curtailment_hours, 2),
-        "total_fault_hours": round(fault_hours, 2),
-        "estimated_curtailed_kwh": curtailed_kwh,
-        "category_breakdown_hours": category_summary,
-        "daily_curtailment": daily_list
-    }
-
 # 9. Hardware Manual Lookup
 def lookup_hardware_manual(device_type, code):
     """Retrieves troubleshooting guidelines from hardware_manuals.json."""
@@ -985,12 +1010,30 @@ def generate_report(start_time=None, end_time=None, file_format="csv"):
     """Generates a CSV or HTML performance report and returns the file path."""
     gen = get_expected_vs_actual_generation(start_time=start_time, end_time=end_time)
     eff = analyze_inverter_efficiency(start_time=start_time, end_time=end_time)
-    bess = get_bess_health(start_time=start_time, end_time=end_time)
+    # LOG-04b: cover the full BESS fleet (all 7 units), not just 3.
+    bess_ids = [f"JAMNAGAR_VIRTUAL_GATEWAY_{u}" for u in
+                ("B1BCT1", "B1BCT2", "B1BCT3", "B2BCT1", "B2BCT2", "B2BCT3", "B3BCT2")]
+    bess_sohs, bess_ces, bess_cycles, bess_insufficient = [], [], [], []
+    for b_id in bess_ids:
+        b_res = get_bess_health(b_id, start_time, end_time)
+        soh = b_res.get("state_of_health_pct")
+        if soh is None:   # LOG-05: exclude Insufficient-Data units from fleet averages
+            bess_insufficient.append(b_id.split("_")[-1])
+            continue
+        bess_sohs.append(soh)
+        bess_ces.append(b_res.get("coulombic_efficiency") or 0.0)
+        bess_cycles.append(b_res.get("total_cycles") or 0)
+
+    avg_bess_soh = sum(bess_sohs) / len(bess_sohs) if bess_sohs else 0.0
+    avg_bess_ce = sum(bess_ces) / len(bess_ces) if bess_ces else 0.0
+    avg_bess_cycles = sum(bess_cycles) / len(bess_cycles) if bess_cycles else 0.0
+
     thermal = detect_thermal_anomalies(start_time=start_time, end_time=end_time)
     curt = analyze_grid_curtailment(start_time=start_time, end_time=end_time)
     soiling = calibrate_soiling_rate(start_time=start_time, end_time=end_time)
     
-    report_dir = os.path.dirname(__file__)
+    report_dir = os.path.join(os.path.dirname(__file__), "reports")
+    os.makedirs(report_dir, exist_ok=True)
     
     if file_format.lower() == "csv":
         file_path = os.path.join(report_dir, "sungenie_report.csv")
@@ -1007,9 +1050,10 @@ def generate_report(start_time=None, end_time=None, file_format="csv"):
             ["Hardware Inefficiency Loss (kWh)", gen["attribution"]["Hardware Inefficiency"]],
             ["Grid Curtailment Loss (kWh)", gen["attribution"]["Grid Curtailment"]],
             ["Fleet Avg Inverter Efficiency (%)", eff.get("fleet_avg_efficiency_pct", 0.0)],
-            ["BESS State of Health (%)", bess.get("state_of_health_pct", 0.0)],
-            ["BESS Coulombic Efficiency", bess.get("coulombic_efficiency", 0.0)],
-            ["BESS Total Cycles", bess.get("total_cycles", 0)],
+            ["BESS Avg State of Health (%)", round(avg_bess_soh, 2)],
+            ["BESS Avg Coulombic Efficiency", round(avg_bess_ce, 3)],
+            ["BESS Avg Total Cycles", round(avg_bess_cycles, 2)],
+            ["BESS Units Reported", f"{len(bess_sohs)} of {len(bess_ids)}" + (f" (insufficient data: {', '.join(bess_insufficient)})" if bess_insufficient else "")],
             ["Thermal Anomaly Count", thermal.get("anomaly_count", 0)],
             ["Max Module Temp Delta (C)", thermal.get("max_delta_c", 0.0)],
             ["Plant Availability (%)", curt.get("plant_availability_pct", 0.0)],
@@ -1046,7 +1090,7 @@ def generate_report(start_time=None, end_time=None, file_format="csv"):
                 <tr><td>Generation Gap</td><td>{gen['gap_kwh']:,} kWh</td></tr>
                 <tr><td>Soiling Loss</td><td>{gen['attribution']['Soiling']:,} kWh</td></tr>
                 <tr><td>Fleet Avg Inverter Efficiency</td><td>{eff.get('fleet_avg_efficiency_pct', 0.0)}%</td></tr>
-                <tr><td>BESS State of Health</td><td>{bess.get('state_of_health_pct', 0.0)}%</td></tr>
+                <tr><td>BESS Avg State of Health</td><td>{avg_bess_soh:.2f}%</td></tr>
                 <tr><td>Plant Availability</td><td>{curt.get('plant_availability_pct', 0.0)}%</td></tr>
             </table>
         </body>

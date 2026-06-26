@@ -1,0 +1,5 @@
+{
+  "summary":  "Updates the frontend dashboard index.html: removes duplicate lines from fetchAll(), implements the Chart.js renderForecast() function for day-ahead BESS dispatch visualization, and extends the client-side simulateChatbot emulator to handle relative timeframe fallbacks and troubleshooting status codes (e.g. inverter, battery, weather codes).",
+  "updatedAt":  "2026-06-26T09:26:37.670883600Z",
+  "userFacing":  true
+}

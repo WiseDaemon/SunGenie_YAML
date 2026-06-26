@@ -8,6 +8,19 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SEC-05: API key for /api/* calls. Injected by app_server.py at serve time. -->
+    <script>
+        window.SUNGENIE_API_KEY = "";
+        function apiHeaders(extra) {
+            const h = Object.assign({}, extra || {});
+            if (window.SUNGENIE_API_KEY) h['X-API-Key'] = window.SUNGENIE_API_KEY;
+            return h;
+        }
+        function withKey(url) {
+            if (!window.SUNGENIE_API_KEY) return url;
+            return url + (url.includes('?') ? '&' : '?') + 'api_key=' + encodeURIComponent(window.SUNGENIE_API_KEY);
+        }
+    </script>
     <style>
         :root {
             --bg-color: #0b0f19;
@@ -706,12 +719,12 @@
             if (start && end) {
                 url += `&start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}`;
             }
-            window.open(url, '_blank');
+            window.open(withKey(url), '_blank');
         }
 
         async function fetchSafe(url, defaultVal) {
             try {
-                const r = await fetch(url);
+                const r = await fetch(url, { headers: apiHeaders() });
                 if (!r.ok) {
                     console.warn(`Endpoint ${url} returned status ${r.status}, using fallbacks.`);
                     return defaultVal;
@@ -1158,7 +1171,7 @@
             let data;
             try {
                 const response = await fetch('/api/chat', {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: apiHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ prompt })
                 });
                 if (!response.ok) {
@@ -1311,6 +1324,11 @@
             }
             if (timeframeMsg && res && res.response) {
                 res.response += timeframeMsg;
+            }
+            // ENG-02: this path runs ONLY when the live API is unreachable. The
+            // numbers below are a static client-side demo, not live telemetry.
+            if (res && res.response) {
+                res.response = "> ⚠️ **Offline demo — not live data.** The API server was unreachable, so this answer is a static client-side simulation.\n\n" + res.response;
             }
             return res;
         }
