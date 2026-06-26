@@ -34,7 +34,7 @@ The intelligence of the O&M agent is orchestrated through a prioritized multi-mo
 *   **Primary Model**: **Google Gemini (Gemma 4 26B)** (specifically using the requested `gemma-4-26b-a4b-it` model) functions as the primary inference engine to provide fast and accurate answers directly from local telemetry.
 *   **Fallback Models**: If Google API is unreachable, requests are automatically routed to:
     *   *Nvidia Ising Calibration 35B*: Dedicated specialist for physical calculations, irradiance correlations, and thermal hotspot anomalies.
-    *   *Nvidia Llama 3.1 8B*: Dedicated engine for operational ticketing classifications and general QA.
+    *   *Nvidia Gemma 3 12B*: Dedicated engine for operational ticketing classifications and general QA.
 
 ---
 

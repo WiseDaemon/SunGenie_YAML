@@ -358,7 +358,7 @@ class Agent:
         context_data = ""
         chart_spec   = None
         thoughts     = ["Initializing local telemetry diagnostics..."]
-        use_ising    = False  # True → Ising 35B specialist; False → Llama 8B
+        use_ising    = False  # True → Ising 35B specialist; False → Gemma 3 12B
 
         # ── Direct SQL query — check FIRST to avoid asset hijacking ──────────────────
         if "sql" in prompt_lower and "weather" in prompt_lower:
@@ -952,15 +952,15 @@ class Agent:
                     return AgentResponse(choices[0]["message"]["content"], thoughts, chart_spec)
                 raise ValueError(f"Empty choices: {raw[:200]}")
             except Exception as ising_err:
-                thoughts.append(f"Ising 35B unavailable ({str(ising_err)[:80]}). Falling back to Llama 3.1 8B...")
+                thoughts.append(f"Ising 35B unavailable ({str(ising_err)[:80]}). Falling back to Gemma 3 12B...")
                 use_ising = False
 
-        # ── Tertiary fallback: Nvidia Llama 3.1 8B ──
+        # ── Tertiary fallback: Nvidia Gemma 3 12B ──
         if not use_ising:
-            thoughts.append("Consulting Nvidia Llama 3.1 8B (integrate.api.nvidia.com)...")
+            thoughts.append("Consulting Nvidia Gemma 3 12B (integrate.api.nvidia.com)...")
             try:
                 raw  = await loop.run_in_executor(
-                    None, lambda: _call_nvidia("meta/llama-3.1-8b-instruct",
+                    None, lambda: _call_nvidia("google/gemma-3-12b-it",
                                                LLAMA_KEY, temperature=0.5, max_tokens=4096)
                 )
                 resp_json = json.loads(raw)
@@ -968,6 +968,6 @@ class Agent:
                 if choices:
                     return AgentResponse(choices[0]["message"]["content"], thoughts, chart_spec)
                 raise ValueError(f"Empty choices: {raw[:200]}")
-            except Exception as llama_err:
-                thoughts.append(f"Llama 8B failed ({str(llama_err)[:80]}).")
-                return AgentResponse(f"All AI backends unavailable. Last error: {str(llama_err)}", thoughts)
+            except Exception as gemma_err:
+                thoughts.append(f"Gemma 3 12B failed ({str(gemma_err)[:80]}).")
+                return AgentResponse(f"All AI backends unavailable. Last error: {str(gemma_err)}", thoughts)
