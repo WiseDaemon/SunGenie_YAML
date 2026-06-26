@@ -1,0 +1,4 @@
+{
+  "summary":  "Update agent_setup.py to import LocalAgentConfig and Agent from the Windows compatibility shim when running on Windows.",
+  "updatedAt":  "2026-06-24T12:42:47.800579800Z"
+}

@@ -1,0 +1,4 @@
+{
+  "summary":  "Update compile_db.py schema and mappings to include the outputPower field for inverters, enabling correct expected-vs-actual calculations.",
+  "updatedAt":  "2026-06-24T12:29:47.798830200Z"
+}

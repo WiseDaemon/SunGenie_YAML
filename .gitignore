@@ -1,0 +1,5 @@
+sungenie_telemetry.db
+__pycache__/
+*.pyc
+.env
+test_payload.json
