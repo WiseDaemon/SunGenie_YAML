@@ -771,13 +771,35 @@
                     thoughtsHtml = `<div class="thoughts-container"><strong>Process:</strong><br>${data.thoughts.map(t => `<div class="thought-line">&gt; ${t}</div>`).join('')}</div>`;
                 }
 
-                // Markdown-lite formatting
-                let content = (data.response || 'No response received.')
-                    .replace(/\n/g, '<br>')
+                // Markdown-lite formatting with code block masking to preserve white spaces/new lines
+                let content = (data.response || 'No response received.');
+                const codeBlocks = [];
+                content = content.replace(/```([\s\S]*?)```/g, (match) => {
+                    const id = `__CODE_BLOCK_${codeBlocks.length}__`;
+                    codeBlocks.push(match);
+                    return id;
+                });
+                content = content.replace(/`([^`\n]+)`/g, (match) => {
+                    const id = `__CODE_BLOCK_${codeBlocks.length}__`;
+                    codeBlocks.push(match);
+                    return id;
+                });
+
+                content = content
                     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/`(.*?)`/g, '<code>$1</code>')
-                    .replace(/```json([\s\S]*?)```/g, '<pre><code class="language-json">$1</code></pre>')
-                    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+                    .replace(/\n/g, '<br>');
+
+                codeBlocks.forEach((block, idx) => {
+                    const placeholder = `__CODE_BLOCK_${idx}__`;
+                    let formatted = '';
+                    if (block.startsWith('```')) {
+                        const code = block.replace(/```(json)?/, '').slice(0, -3).trim();
+                        formatted = `<pre><code class="${block.startsWith('```json') ? 'language-json' : ''}">${code}</code></pre>`;
+                    } else {
+                        formatted = `<code>${block.slice(1, -1)}</code>`;
+                    }
+                    content = content.replace(placeholder, formatted);
+                });
 
                 // Inline chart rendering
                 let chartHtml = '';
@@ -814,39 +836,40 @@
                         ${chartHtml}
                     </div>`;
 
-                // Render Chart.js after DOM is ready
+                // Render Chart.js after DOM is ready using setTimeout
                 if (data.chart) {
-                    try {
-                        const spec   = data.chart;
-                        const ctx    = document.getElementById(chartCanvasId).getContext('2d');
-                        // Inject legend and scale label colors from dark theme
-                        const opts   = spec.options || {};
-                        opts.responsive = true;
-                        opts.maintainAspectRatio = false;
-                        if (!opts.plugins) opts.plugins = {};
-                        if (!opts.plugins.legend) opts.plugins.legend = {};
-                        opts.plugins.legend.labels = { color: '#9ca3af', font: { size: 10 }, boxWidth: 10 };
+                    setTimeout(() => {
+                        try {
+                            const spec   = data.chart;
+                            const ctx    = document.getElementById(chartCanvasId).getContext('2d');
+                            const opts   = spec.options || {};
+                            opts.responsive = true;
+                            opts.maintainAspectRatio = false;
+                            if (!opts.plugins) opts.plugins = {};
+                            if (!opts.plugins.legend) opts.plugins.legend = {};
+                            opts.plugins.legend.labels = { color: '#9ca3af', font: { size: 10 }, boxWidth: 10 };
 
-                        // Apply dark colors to all scales
-                        if (opts.scales) {
-                            for (const scale of Object.values(opts.scales)) {
-                                if (!scale.grid) scale.grid = {};
-                                scale.grid.color = 'rgba(255,255,255,0.05)';
-                                if (!scale.ticks) scale.ticks = {};
-                                scale.ticks.color = '#9ca3af';
-                                scale.ticks.font = { size: 9 };
-                                if (scale.title) scale.title.color = '#9ca3af';
+                            // Apply dark colors to all scales
+                            if (opts.scales) {
+                                for (const scale of Object.values(opts.scales)) {
+                                    if (!scale.grid) scale.grid = {};
+                                    scale.grid.color = 'rgba(255,255,255,0.05)';
+                                    if (!scale.ticks) scale.ticks = {};
+                                    scale.ticks.color = '#9ca3af';
+                                    scale.ticks.font = { size: 9 };
+                                    if (scale.title) scale.title.color = '#9ca3af';
+                                }
                             }
-                        }
 
-                        new Chart(ctx, {
-                            type: spec.type,
-                            data: spec.data,
-                            options: opts
-                        });
-                    } catch (chartErr) {
-                        console.error("Error drawing inline chat chart:", chartErr);
-                    }
+                            new Chart(ctx, {
+                                type: spec.type,
+                                data: spec.data,
+                                options: opts
+                            });
+                        } catch (chartErr) {
+                            console.error("Error drawing inline chat chart:", chartErr);
+                        }
+                    }, 50);
                 }
 
                 chatBox.scrollTop = chatBox.scrollHeight;
@@ -868,7 +891,13 @@
             let thoughts = ["Initializing local telemetry diagnostics...", "API server offline, running client-side simulated agent..."];
             let chart = null;
 
-            if (lower.includes("battery") || lower.includes("bess") || lower.includes("b1bct1")) {
+            // 1. Weather SQL Query Simulation (Checks weather first to prevent generic SQL overrides)
+            if (lower.includes("weather") && (lower.includes("sql") || lower.includes("select") || lower.includes("telemetry"))) {
+                thoughts.push("Executing weather SQL query simulation...");
+                responseText = `**SQL Query Results (Weather Data):**\n\`\`\`json\n[\n  {"timestamp": "2026-06-24 16:30:13", "ambientTemperature": 34.82899856567383, "planeOfArraySensor01": 488.0320129394531},\n  {"timestamp": "2026-06-24 16:25:13", "ambientTemperature": 34.816001892089844, "planeOfArraySensor01": 526.9940185546875},\n  {"timestamp": "2026-06-24 16:20:13", "ambientTemperature": 34.858001708984375, "planeOfArraySensor01": 526.7839965820312},\n  {"timestamp": "2026-06-24 16:15:12", "ambientTemperature": 34.845001220703125, "planeOfArraySensor01": 551.5869750976562},\n  {"timestamp": "2026-06-24 16:10:12", "ambientTemperature": 34.8849983215332, "planeOfArraySensor01": 556.8569946289062}\n]\n\`\`\``;
+            
+            // 2. Battery / BESS health
+            } else if (lower.includes("battery") || lower.includes("bess") || lower.includes("b1bct1")) {
                 thoughts.push("Resolving asset B1BCT1...");
                 thoughts.push("Retrieving battery health metrics...");
                 responseText = `### BESS Health Summary — B1BCT1\n\n*   **Device ID**: \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1\`\n*   **State of Health (SoH)**: **99.4%**\n*   **Total Charge Cycles**: **12**\n*   **Coulombic Efficiency**: **0.98**\n*   **Operating Status**: **Healthy**\n\nNo degradation warnings or actionable thermal tasks detected. Battery capacity remains within nominal specifications.`;
@@ -887,6 +916,61 @@
                     },
                     options: { cutout: "70%" }
                 };
+
+            // 3. PR Gap Breakdown
+            } else if (lower.includes("pr gap") || lower.includes("pr_gap") || lower.includes("performance ratio") || lower.includes("generation performance") || lower.includes("loss attribution")) {
+                thoughts.push("Loading actual and expected generation telemetry...");
+                thoughts.push("Calculating Performance Ratio (PR) gap...");
+                thoughts.push("Attributing losses to soiling, shading, hardware, and grid curtailment...");
+                responseText = `### Generation Performance & PR Gap Breakdown\n\n*   **Actual Generation**: **5,628 kWh**\n*   **Expected Generation**: **8,140 kWh**\n*   **Performance Ratio (PR)**: **0.7788** (Target: **0.85**)\n*   **Generation Gap**: **2,512 kWh**\n\n#### Loss Attribution Analysis:\n1.  **Soiling Losses**: **1,130.4 kWh** (45.0% of gap) — Significant dust accumulation on module surfaces.\n2.  **Hardware Inefficiency**: **628.0 kWh** (25.0% of gap) — Sub-optimal conversion and cabling loss.\n3.  **Grid Curtailment**: **628.0 kWh** (25.0% of gap) — Grid-forced shutdown during peak hours.\n4.  **Shading Losses**: **125.6 kWh** (5.0% of gap) — Localized obstruction from adjacent structures.`;
+                chart = {
+                    type: "bar",
+                    title: "PR Gap Loss Attribution (kWh)",
+                    description: "Loss attribution breakdown calculated using aggregate physical model comparison.",
+                    data: {
+                        labels: ["Soiling", "Shading", "Hardware Inefficiency", "Grid Curtailment"],
+                        datasets: [{
+                            label: "Loss (kWh)",
+                            data: [1130.4, 125.6, 628.0, 628.0],
+                            backgroundColor: ["rgba(138,184,51,0.75)", "rgba(9,137,177,0.75)", "rgba(74,181,196,0.75)", "rgba(2,150,118,0.75)"],
+                            borderColor: ["#8ab833","#0989b1","#4ab5c4","#029676"],
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                };
+
+            // 4. String Outliers / SCB Checks
+            } else if (lower.includes("string") || lower.includes("scb") || lower.includes("outlier") || lower.includes("underperforming")) {
+                thoughts.push("Loading String Combiner Box (SCB) current metrics...");
+                thoughts.push("Running Z-score outlier detection algorithm...");
+                thoughts.push("Flagging strings with Z-score < -2.0...");
+                responseText = `### String Combiner Box (SCB) Outlier Check — Inverter B1INV1\n\n*   **Fleet Status**: **All strings within normal limits.**\n*   **Mean String Current**: **8.5 A** (Std Dev: **0.4 A**)\n*   **Total Strings Monitored**: **16**\n*   **Anomalies Flagged**: **0**\n\nNo underperforming strings are currently flagged. The module strings are operating within the expected current distribution range.`;
+                chart = {
+                    type: "bar",
+                    title: "SCB Current Z-Scores — Inverter B1INV1",
+                    description: "Monitors individual string current deviation. Value below -2.0 indicates string failure/shading.",
+                    data: {
+                        labels: ["Str 1", "Str 2", "Str 3", "Str 4", "Str 5", "Str 6", "Str 7", "Str 8", "Str 9", "Str 10", "Str 11", "Str 12", "Str 13", "Str 14", "Str 15", "Str 16"],
+                        datasets: [{
+                            label: "Z-Score",
+                            data: [-0.1, 0.2, -0.3, 0.1, -1.8, 0.4, -0.2, 0.1, 0.3, -0.5, 0.2, -0.1, 0.4, -0.3, 0.1, 0.2],
+                            backgroundColor: "rgba(138,184,51,0.75)",
+                            borderColor: "#8ab833",
+                            borderWidth: 1.5,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: false } }
+                    }
+                };
+
+            // 5. Inverter efficiency curve
             } else if (lower.includes("efficiency") || lower.includes("dc-ac") || lower.includes("conversion")) {
                 thoughts.push("Running Inverter Efficiency Curve analysis...");
                 responseText = `### Inverter Fleet DC-AC Efficiency Curve\n\n*   **Fleet Average Efficiency**: **95.6%**\n*   **Optimal Load Level**: 50% to 80% load factor (efficiency peaks at **96.2%**).\n*   **Underperforming Units**: None. All 2 active inverters (B1INV1, B3INV1) are converting above the 92% alert threshold.\n\nDC-AC conversion parameters are calibrated and running within high efficiency brackets.`;
@@ -905,8 +989,8 @@
                             tension: 0.4,
                             pointRadius: 5
                         }, {
-                            label: "Target (96%)",
-                            data: [96, 96, 96, 96, 96, 96, 96, 96, 96, 96],
+                            label: "Target (92%)",
+                            data: [92, 92, 92, 92, 92, 92, 92, 92, 92, 92],
                             borderColor: "rgba(239,68,68,0.5)",
                             borderDash: [5, 4],
                             borderWidth: 1.5,
@@ -921,15 +1005,125 @@
                         }
                     }
                 };
-            } else if (lower.includes("sql") && lower.includes("weather")) {
-                thoughts.push("Executing weather SQL query simulation...");
-                responseText = `**SQL Query Results (Weather Data):**\n\`\`\`json\n[\n  {"timestamp": "2026-06-24 16:30:13", "ambientTemperature": 34.82899856567383, "planeOfArraySensor01": 488.0320129394531},\n  {"timestamp": "2026-06-24 16:25:13", "ambientTemperature": 34.816001892089844, "planeOfArraySensor01": 526.9940185546875},\n  {"timestamp": "2026-06-24 16:20:13", "ambientTemperature": 34.858001708984375, "planeOfArraySensor01": 526.7839965820312},\n  {"timestamp": "2026-06-24 16:15:12", "ambientTemperature": 34.845001220703125, "planeOfArraySensor01": 551.5869750976562},\n  {"timestamp": "2026-06-24 16:10:12", "ambientTemperature": 34.8849983215332, "planeOfArraySensor01": 556.8569946289062}\n]\n\`\`\``;
+
+            // 6. Irradiance-Power Correlation & Clipping
+            } else if (lower.includes("irradiance") || lower.includes("correlate") || lower.includes("clipping") || lower.includes("poa") || lower.includes("scatter")) {
+                thoughts.push("Fetching Plane-of-Array (POA) irradiance sensors...");
+                thoughts.push("Comparing POA irradiance with active power output...");
+                thoughts.push("Calculating R² correlation coefficient...");
+                responseText = `### Irradiance vs Power Output Analysis\n\n*   **Irradiance POA Correlation (R²)**: **0.912**\n*   **Status**: **Normal with Inverter Power Clipping**\n*   **Observations**:\n    *   Strong linear correlation up to **800 W/m²**.\n    *   Significant power clipping occurs above **900 W/m²** at approximately **7,400 kW** due to inverter capacity limits.\n    *   No severe soiling or degradation shifts observed in the scatter profile.`;
+                chart = {
+                    type: "scatter",
+                    title: "POA Irradiance vs Aggregate Power Output",
+                    description: "Plots Plane-of-Array (POA) irradiance against plant active power. Red dots highlight power clipping.",
+                    data: {
+                        datasets: [
+                            {
+                                label: "Actual Output",
+                                data: [
+                                    { x: 100, y: 800 }, { x: 200, y: 1650 }, { x: 300, y: 2500 },
+                                    { x: 400, y: 3320 }, { x: 500, y: 4150 }, { x: 600, y: 5020 },
+                                    { x: 700, y: 5850 }, { x: 800, y: 6700 }
+                                ],
+                                backgroundColor: "rgba(138,184,51,0.65)",
+                                pointRadius: 4
+                            },
+                            {
+                                label: "Clipping",
+                                data: [{ x: 900, y: 7350 }, { x: 950, y: 7380 }, { x: 1000, y: 7400 }],
+                                backgroundColor: "rgba(239,68,68,0.8)",
+                                pointRadius: 5
+                            },
+                            {
+                                label: "Expected (Linear)",
+                                data: [
+                                    { x: 100, y: 850 }, { x: 200, y: 1700 }, { x: 300, y: 2550 },
+                                    { x: 400, y: 3400 }, { x: 500, y: 4250 }, { x: 600, y: 5100 },
+                                    { x: 700, y: 5950 }, { x: 800, y: 6800 }, { x: 900, y: 7650 },
+                                    { x: 950, y: 8075 }, { x: 1000, y: 8500 }
+                                ],
+                                showLine: true,
+                                borderColor: "rgba(74,181,196,0.7)",
+                                borderDash: [4, 3],
+                                borderWidth: 1.5,
+                                pointRadius: 0,
+                                fill: false
+                            }
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            x: { title: { display: true, text: "POA (W/m²)" } },
+                            y: { title: { display: true, text: "Power (kW)" } }
+                        }
+                    }
+                };
+
+            // 7. Thermal hotspot warnings
+            } else if (lower.includes("thermal") || lower.includes("anomaly") || lower.includes("anomalies") || lower.includes("hotspot") || lower.includes("temperature")) {
+                thoughts.push("Parsing module thermal telemetry...");
+                thoughts.push("Checking maximum temperature delta (ΔT)...");
+                thoughts.push("Scanning for localized hot spot signatures...");
+                responseText = `### Thermal Anomalies & Hotspot Report\n\n*   **Anomalies Detected**: **0**\n*   **Max Temperature Delta (ΔT)**: **5.2 °C** (Normal: < 10 °C)\n*   **Fleet Status**: **Normal**\n*   **Thermal Trend**: Average delta is stable at **4.8 °C - 5.2 °C** over the past 5 days.\n\nNo hot spots or diode failures are flagged. Module thermal profiles are within normal operating bounds.`;
+                chart = {
+                    type: "line",
+                    title: "Max Module Temp Delta (ΔT) — 5-Day Trend",
+                    description: "Tracks the maximum delta between ambient and module temperatures across the fleet.",
+                    data: {
+                        labels: ["2026-06-20", "2026-06-21", "2026-06-22", "2026-06-23", "2026-06-24"],
+                        datasets: [{
+                            label: "Max Temp Delta (°C)",
+                            data: [4.1, 4.3, 4.5, 4.8, 5.2],
+                            borderColor: "#f59e0b",
+                            backgroundColor: "rgba(245,158,11,0.12)",
+                            fill: true,
+                            tension: 0.2,
+                            pointRadius: 5
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: { min: 0, max: 10, title: { display: true, text: "Max Delta (°C)" } }
+                        }
+                    }
+                };
+
+            // 8. Availability & Curtailment
+            } else if (lower.includes("curtailment") || lower.includes("availability") || lower.includes("grid") || lower.includes("nighttime")) {
+                thoughts.push("Loading grid connection and plant availability logs...");
+                thoughts.push("Summing curtailment and fault hours...");
+                thoughts.push("Estimating curtailed energy loss...");
+                responseText = `### Grid Curtailment & Availability Report\n\n*   **Plant Availability**: **99.93%**\n*   **Total Curtailment Hours**: **4.5 hours**\n*   **Estimated Energy Lost**: **38,916 kWh**\n*   **Fault Hours**: **0.0 hours**\n\n#### Daylight Operating State Breakdown:\n*   **Running**: **120.5 hours**\n*   **Grid Curtailment**: **4.5 hours**\n*   **Nighttime/Standby**: **115.0 hours**`;
+                chart = {
+                    type: "doughnut",
+                    title: "Operating State Breakdown (Hours)",
+                    description: "Categorizes plant operating hours filtered strictly to daylight windows (POA > 50 W/m²).",
+                    data: {
+                        labels: ["Running", "Grid Curtailment", "Fault/Trip", "Nighttime", "Standby"],
+                        datasets: [{
+                            data: [120.5, 4.5, 0.0, 108.0, 7.0],
+                            backgroundColor: ["rgba(138,184,51,0.8)", "rgba(245,158,11,0.8)", "rgba(239,68,68,0.8)", "rgba(60,70,100,0.7)", "rgba(74,181,196,0.6)"],
+                            borderWidth: 1,
+                            borderColor: "rgba(11,15,25,0.5)"
+                        }]
+                    },
+                    options: { cutout: "60%" }
+                };
+
+            // 9. Custom / General SQL simulation
             } else if (lower.includes("sql") || lower.includes("select")) {
                 thoughts.push("Executing custom SQL query simulation...");
                 responseText = `**SQL Query Results:**\n\`\`\`json\n[\n  {"device_group": "WEATHER", "count": 2400},\n  {"device_group": "INVERTER", "count": 4800},\n  {"device_group": "BESS", "count": 16800},\n  {"device_group": "METER", "count": 50400}\n]\n\`\`\``;
+
+            // 10. Capabilities & Calculation methodology questions
+            } else if (lower.includes("what can you do") || lower.includes("capabilities") || lower.includes("help") || lower.includes("how do you") || lower.includes("how does") || lower.includes("how is") || lower.includes("methodology") || lower.includes("calculate") || lower.includes("calibrate")) {
+                thoughts.push("Loading capabilities and calculation methodology...");
+                responseText = `### JioSunGenie eAnalytiX Capabilities &amp; Methodology\n\nI am a telemetry-calibrated O&amp;M assistant, calibrated on **8 active ML pipelines** and directly connected to the Jamnagar SQLite database.\n\n#### 🛠️ Core Capabilities\n1. **PR Gap Loss Attribution**: Calculates performance ratio and breaks down losses (Soiling, Shading, Hardware, Grid Curtailment).\n2. **String Outlier Check (SCB)**: Uses Z-score calculations to detect faulty/underperforming solar strings.\n3. **Unsupervised Soiling Loss Calibration**: Estimates daily dust accumulation rates using change-point analysis of panel washing cycles.\n4. **BESS Health Monitor (SoH)**: Calculates coulombic efficiency and estimates BESS capacity wear over cycles.\n5. **Inverter DC-AC Efficiency**: Bins conversion efficiency by load factor to spot underperforming units.\n6. **Irradiance-Power Correlation**: Computes POA R² and detects power clipping.\n7. **Thermal Hotspot Detection**: Flags module anomalies by comparing measured temperature to the NOCT cell temperature model.\n8. **Daylight Availability &amp; Curtailment**: Calculates availability restricted to active daylight windows (POA &gt; 50 W/m²).\n\n#### 🧮 Mathematical Formulas &amp; Models\n*   **Performance Ratio**: \\(PR = \\frac{E_{\\text{actual}}}{E_{\\text{expected}}}\\)\n*   **Expected Power**: \\(P_{\\text{exp}} = \\text{Capacity} \\cdot \\left(\\frac{\\text{POA}}{1000}\\right) \\cdot (1 - 0.004 \\cdot (T_{\\text{mod}} - 25)) \\cdot \\text{LossFactor}\\)\n*   **String Current Z-Score**: \\(Z_i = \\frac{x_i - \\mu}{\\sigma}\\) (anomalies flagged when \\(Z_i &lt; -2.0\\))\n*   **BESS Coulombic Efficiency**: \\(\\eta_C = \\frac{\\sum |I_{\\text{discharge}}|}{\\sum |I_{\\text{charge}}|}\\)\n*   **Predicted Module Temp**: \\(T_{\\text{pred}} = T_{\\text{ambient}} + \\left(\\frac{\\text{NOCT} - 20}{800}\\right) \\cdot \\text{POA}\\) (hotspots flagged where \\(T_{\\text{measured}} - T_{\\text{pred}} &gt; 8^\\circ\\text{C}\\))\n\n*I use **Gemma 4 26B** as my primary reasoning model, with Nvidia Ising Calibration 35B and Llama 3.1 8B as dedicated fallbacks.*`;
+
+            // Default fallback
             } else {
                 thoughts.push("Processing query...");
-                responseText = `Hello! I am your SunGenie O&M AI Agent. The local API server is currently offline or hosted in demo mode (GitHub Pages), so I am responding using my built-in JS emulator.\n\nHere are some queries I am configured to answer:\n- **Battery health**: *"What is the health and cycle count of battery B1BCT1?"*\n- **Inverter efficiency**: *"What is the inverter fleet DC-AC conversion efficiency?"*\n- **SQL queries**: *"SQL Weather data"* or any custom \`SELECT\` statement.\n\nAll calculation methodology details (PR Gap, Z-Score, Coulombic efficiency, NOCT module temperature model, and daylight availability) can be found in the repository's [Capabilities Document](https://github.com/WiseDaemon/SunGenie_YAML/blob/main/agent_capabilities.md).`;
+                responseText = `Hello! I am your SunGenie O&amp;M AI Agent. The local API server is currently offline or hosted in demo mode (GitHub Pages), so I am responding using my built-in JS emulator.\n\nHere are some queries I am configured to answer:\n- **Battery health**: *"What is the health and cycle count of battery B1BCT1?"*\n- **Inverter efficiency**: *"What is the inverter fleet DC-AC conversion efficiency?"*\n- **SQL queries**: *"SQL Weather data"* or any custom \`SELECT\` statement.\n\nAll calculation methodology details (PR Gap, Z-Score, Coulombic efficiency, NOCT module temperature model, and daylight availability) can be found in the repository's [Capabilities Document](https://github.com/WiseDaemon/SunGenie_YAML/blob/main/agent_capabilities.md).`;
             }
 
             return { response: responseText, thoughts, chart };
