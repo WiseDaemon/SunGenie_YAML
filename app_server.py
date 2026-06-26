@@ -19,66 +19,101 @@ class ChatRequest(BaseModel):
     prompt: str
 
 @app.get("/api/pr_gap")
-def api_pr_gap(date: str = None):
+def api_pr_gap(date: str = None, start_time: str = None, end_time: str = None):
     try:
-        res = ml_pipelines.get_expected_vs_actual_generation(date)
+        res = ml_pipelines.get_expected_vs_actual_generation(date_str=date, start_time=start_time, end_time=end_time)
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/bess_health")
-def api_bess_health(bess_id: str = "JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1"):
+def api_bess_health(bess_id: str = "JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", start_time: str = None, end_time: str = None):
     try:
-        res = ml_pipelines.get_bess_health(bess_id)
+        res = ml_pipelines.get_bess_health(bess_id, start_time=start_time, end_time=end_time)
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/scb_outliers")
-def api_scb_outliers(inverter_id: str = "JAMNAGAR_VIRTUAL_GATEWAY_B1INV1", timestamp: str = None):
+def api_scb_outliers(inverter_id: str = "JAMNAGAR_VIRTUAL_GATEWAY_B1INV1", timestamp: str = None, start_time: str = None, end_time: str = None):
     try:
-        res = ml_pipelines.detect_scb_outliers(inverter_id, timestamp)
+        res = ml_pipelines.detect_scb_outliers(inverter_id, timestamp_str=timestamp, start_time=start_time, end_time=end_time)
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/soiling_rate")
-def api_soiling_rate():
+def api_soiling_rate(start_time: str = None, end_time: str = None):
     try:
-        res = ml_pipelines.calibrate_soiling_rate()
+        res = ml_pipelines.calibrate_soiling_rate(start_time=start_time, end_time=end_time)
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/inverter_efficiency")
-def api_inverter_efficiency():
+def api_inverter_efficiency(start_time: str = None, end_time: str = None):
     try:
-        res = ml_pipelines.analyze_inverter_efficiency()
+        res = ml_pipelines.analyze_inverter_efficiency(start_time=start_time, end_time=end_time)
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/irradiance_correlation")
-def api_irradiance_correlation():
+def api_irradiance_correlation(start_time: str = None, end_time: str = None):
     try:
-        res = ml_pipelines.analyze_irradiance_power_correlation()
+        res = ml_pipelines.analyze_irradiance_power_correlation(start_time=start_time, end_time=end_time)
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/thermal_anomalies")
-def api_thermal_anomalies():
+def api_thermal_anomalies(start_time: str = None, end_time: str = None):
     try:
-        res = ml_pipelines.detect_thermal_anomalies()
+        res = ml_pipelines.detect_thermal_anomalies(start_time=start_time, end_time=end_time)
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/api/curtailment")
-def api_curtailment():
+def api_curtailment(start_time: str = None, end_time: str = None):
     try:
-        res = ml_pipelines.analyze_grid_curtailment()
+        res = ml_pipelines.analyze_grid_curtailment(start_time=start_time, end_time=end_time)
         return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.get("/api/alerts")
+def api_alerts(start_time: str = None, end_time: str = None):
+    try:
+        res = ml_pipelines.get_all_alerts(start_time=start_time, end_time=end_time)
+        return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.get("/api/soiling_roi")
+def api_soiling_roi(start_time: str = None, end_time: str = None):
+    try:
+        res = ml_pipelines.calibrate_cleaning_roi(start_time=start_time, end_time=end_time)
+        return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.get("/api/forecast")
+def api_forecast(start_time: str = None, end_time: str = None):
+    try:
+        res = ml_pipelines.get_generation_and_bess_forecast(start_time=start_time, end_time=end_time)
+        return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.get("/api/generate_report")
+def api_generate_report(start_time: str = None, end_time: str = None, format: str = "csv"):
+    try:
+        from fastapi.responses import FileResponse
+        file_path = ml_pipelines.generate_report(start_time=start_time, end_time=end_time, file_format=format)
+        media_type = "text/csv" if format.lower() == "csv" else "text/html"
+        filename = "sungenie_report.csv" if format.lower() == "csv" else "sungenie_report.html"
+        return FileResponse(path=file_path, media_type=media_type, filename=filename)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 

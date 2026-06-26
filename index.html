@@ -246,6 +246,97 @@
             transform: translateY(0);
         }
 
+        /* Tabs Styling */
+        .tabs-header {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--card-border);
+            padding-bottom: 0.5rem;
+        }
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0.4rem 0.85rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .tab-btn.active {
+            color: var(--accent-lime);
+            background: rgba(138, 184, 51, 0.1);
+            border: 1px solid rgba(138, 184, 51, 0.25);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Progress Bar Styling */
+        .progress-bar-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            height: 10px;
+            border-radius: 999px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+            border: 1px solid var(--card-border);
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-green), var(--accent-orange));
+            width: 0%;
+            transition: width 0.5s ease-out;
+        }
+
+        /* Toast Container */
+        #toast-container {
+            position: fixed;
+            top: 80px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 9999;
+        }
+        .toast {
+            background: rgba(11, 15, 25, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            border-left: 4px solid var(--accent-orange);
+            color: var(--text-primary);
+            padding: 0.85rem 1.25rem;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            font-size: 0.78rem;
+            min-width: 300px;
+            max-width: 400px;
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+        .toast.error-toast {
+            border-color: rgba(239, 68, 68, 0.4);
+            border-left-color: var(--accent-red);
+        }
+        .toast-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .toast-close {
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
         @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -256,6 +347,27 @@
             <p>AI-Powered Plant Optimizer &bull; Jamnagar Solar Facility</p>
         </div>
         <div class="header-badges">
+            <select id="timeframe-select" onchange="onTimeframeChange()" style="
+                background: rgba(20, 28, 47, 0.7);
+                border: 1px solid var(--card-border);
+                color: var(--text-primary);
+                padding: 0.35rem 0.85rem;
+                border-radius: 8px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                outline: none;
+                cursor: pointer;
+            ">
+                <option value="live">Live (All Data)</option>
+                <option value="today">Today (June 24)</option>
+                <option value="yesterday">Yesterday (June 23/24)</option>
+                <option value="week">Last 7 Days</option>
+                <option value="custom">Custom Range</option>
+            </select>
+            <div id="custom-range-inputs" style="display: none; align-items: center; gap: 8px;">
+                <input type="date" id="start-date" onchange="onCustomDateChange()" style="background: rgba(20, 28, 47, 0.7); border: 1px solid var(--card-border); color: var(--text-primary); padding: 0.3rem 0.5rem; border-radius: 6px; font-size: 0.7rem;">
+                <input type="date" id="end-date" onchange="onCustomDateChange()" style="background: rgba(20, 28, 47, 0.7); border: 1px solid var(--card-border); color: var(--text-primary); padding: 0.3rem 0.5rem; border-radius: 6px; font-size: 0.7rem;">
+            </div>
             <div class="status-badge" style="background: rgba(9,137,177,0.15); border-color: rgba(9,137,177,0.4); color: var(--accent-cyan);">WMS: Active</div>
             <div class="status-badge">Plant Online</div>
         </div>
@@ -312,68 +424,93 @@
                 </div>
             </div>
 
-            <!-- Charts 2x2 Grid -->
-            <div class="charts-grid">
-                <!-- Chart 1: PR Gap Bar -->
-                <div class="glass-card">
-                    <div class="chart-header">
-                        <h3>PR Gap Loss Attribution</h3>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span class="chart-tag ml">ML Model</span>
-                            <div class="info-container">
-                                <div class="info-icon">i</div>
-                                <div class="tooltip-text">Calculates expected vs actual generation and attributes the gap to soiling, shading, hardware inefficiency, and grid curtailment.</div>
+            <!-- Tabbed Main Analytics Section -->
+            <div class="tabs-header">
+                <button id="tab-btn-diagnostics" class="tab-btn active" onclick="switchTab('diagnostics')">Telemetry & Diagnostics</button>
+                <button id="tab-btn-forecast" class="tab-btn" onclick="switchTab('forecast')">Day-Ahead Forecast & BESS Dispatch</button>
+            </div>
+
+            <!-- Tab 1 Content: Original 4 Charts -->
+            <div id="tab-diagnostics" class="tab-content active">
+                <div class="charts-grid">
+                    <!-- Chart 1: PR Gap Bar -->
+                    <div class="glass-card">
+                        <div class="chart-header">
+                            <h3>PR Gap Loss Attribution</h3>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="chart-tag ml">ML Model</span>
+                                <div class="info-container">
+                                    <div class="info-icon">i</div>
+                                    <div class="tooltip-text">Calculates expected vs actual generation and attributes the gap to soiling, shading, hardware inefficiency, and grid curtailment.</div>
+                                </div>
                             </div>
                         </div>
+                        <div class="chart-canvas-wrapper"><canvas id="prGapChart"></canvas></div>
                     </div>
-                    <div class="chart-canvas-wrapper"><canvas id="prGapChart"></canvas></div>
-                </div>
-                <!-- Chart 2: Inverter Efficiency Curve -->
-                <div class="glass-card">
-                    <div class="chart-header">
-                        <h3>Inverter Efficiency Curve</h3>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span class="chart-tag ai">Load Analysis</span>
-                            <div class="info-container">
-                                <div class="info-icon">i</div>
-                                <div class="tooltip-text">Aggregates inverter DC-AC conversion efficiency across different load factor bins (0-10% to 90-100%).</div>
+                    <!-- Chart 2: Inverter Efficiency Curve -->
+                    <div class="glass-card">
+                        <div class="chart-header">
+                            <h3>Inverter Efficiency Curve</h3>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="chart-tag ai">Load Analysis</span>
+                                <div class="info-container">
+                                    <div class="info-icon">i</div>
+                                    <div class="tooltip-text">Aggregates inverter DC-AC conversion efficiency across different load factor bins (0-10% to 90-100%).</div>
+                                </div>
                             </div>
                         </div>
+                        <div class="chart-canvas-wrapper"><canvas id="effCurveChart"></canvas></div>
                     </div>
-                    <div class="chart-canvas-wrapper"><canvas id="effCurveChart"></canvas></div>
-                </div>
-                <!-- Chart 3: Irradiance-Power Scatter -->
-                <div class="glass-card">
-                    <div class="chart-header">
-                        <h3>Irradiance vs Power Output</h3>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span class="chart-tag ai">Correlation</span>
-                            <div class="info-container">
-                                <div class="info-icon">i</div>
-                                <div class="tooltip-text">Plots Plane-of-Array (POA) irradiance against plant output power. Red dots show inverter power clipping; dashed line shows linear target.</div>
+                    <!-- Chart 3: Irradiance-Power Scatter -->
+                    <div class="glass-card">
+                        <div class="chart-header">
+                            <h3>Irradiance vs Power Output</h3>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="chart-tag ai">Correlation</span>
+                                <div class="info-container">
+                                    <div class="info-icon">i</div>
+                                    <div class="tooltip-text">Plots Plane-of-Array (POA) irradiance against plant output power. Red dots show inverter power clipping; dashed line shows linear target.</div>
+                                </div>
                             </div>
                         </div>
+                        <div class="chart-canvas-wrapper"><canvas id="irradianceChart"></canvas></div>
                     </div>
-                    <div class="chart-canvas-wrapper"><canvas id="irradianceChart"></canvas></div>
-                </div>
-                <!-- Chart 4: Operating State Breakdown -->
-                <div class="glass-card">
-                    <div class="chart-header">
-                        <h3>Operating State Breakdown</h3>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span class="chart-tag grid">Grid Analysis</span>
-                            <div class="info-container">
-                                <div class="info-icon">i</div>
-                                <div class="tooltip-text">Categorizes the plant's operating states (Running, Grid Curtailment, Fault/Trip, Nighttime, Standby, Maintenance) during daylight hours.</div>
+                    <!-- Chart 4: Operating State Breakdown -->
+                    <div class="glass-card">
+                        <div class="chart-header">
+                            <h3>Operating State Breakdown</h3>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="chart-tag grid">Grid Analysis</span>
+                                <div class="info-container">
+                                    <div class="info-icon">i</div>
+                                    <div class="tooltip-text">Categorizes the plant's operating states (Running, Grid Curtailment, Fault/Trip, Nighttime, Standby, Maintenance) during daylight hours.</div>
+                                </div>
                             </div>
                         </div>
+                        <div class="chart-canvas-wrapper"><canvas id="curtailmentChart"></canvas></div>
                     </div>
-                    <div class="chart-canvas-wrapper"><canvas id="curtailmentChart"></canvas></div>
                 </div>
             </div>
 
-            <!-- Bottom Row: SCB Table + O&M Summary -->
-            <div class="bottom-row">
+            <!-- Tab 2 Content: Day-Ahead BESS Forecast -->
+            <div id="tab-forecast" class="tab-content">
+                <div class="glass-card" style="margin-bottom: 1rem;">
+                    <div class="chart-header">
+                        <h3>24-Hour Day-Ahead &amp; Battery Dispatch Forecast</h3>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="chart-tag ai">BESS Dispatch</span>
+                            <div class="info-container">
+                                <div class="info-icon">i</div>
+                                <div class="tooltip-text">Simulates day-ahead solar GHI/POA generation and computes optimized battery dispatch scheduling for peak shaving and load support.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrapper" style="height: 280px;"><canvas id="forecastChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Bottom Row: SCB Table + Soiling ROI + Actions Panel -->
+            <div class="bottom-row" style="grid-template-columns: 1.1fr 1fr 1.3fr;">
                 <div class="glass-card">
                     <div class="chart-header">
                         <h3>String Combiner (SCB) Outliers</h3>
@@ -385,24 +522,61 @@
                             </div>
                         </div>
                     </div>
-                    <div style="overflow-y: auto; max-height: 200px;">
+                    <div style="overflow-y: auto; max-height: 180px;">
                         <table class="scb-table" id="scb-outliers-table">
                             <thead><tr><th>String</th><th>Current (A)</th><th>Z-Score</th><th>Status</th></tr></thead>
                             <tbody><tr><td colspan="4" style="text-align:center;color:var(--text-secondary);">Loading...</td></tr></tbody>
                         </table>
                     </div>
                 </div>
+                
                 <div class="glass-card">
                     <div class="chart-header">
-                        <h3>O&M Smart Recommendations</h3>
-                        <span class="chart-tag ml">AI Insights</span>
+                        <h3>Soiling ROI Planner</h3>
+                        <span class="chart-tag ml">Cleaning ROI</span>
                     </div>
-                    <div id="om-summary-box" style="font-size: 0.8rem; line-height: 1.65; color: var(--text-secondary); overflow-y:auto; max-height:200px;">
-                        Loading diagnostics...
+                    <div style="font-size: 0.75rem; line-height: 1.5; color: var(--text-secondary);">
+                        <div style="display:flex; justify-content:space-between;"><span>Last Washed:</span><span id="roi-last-clean" style="color:var(--text-primary); font-weight:600;">---</span></div>
+                        <div style="display:flex; justify-content:space-between; margin-top:2px;"><span>Days Elapsed:</span><span id="roi-days-elapsed" style="color:var(--text-primary); font-weight:600;">---</span></div>
+                        <div style="margin-top: 6px; font-size: 0.8rem; display:flex; justify-content:space-between;"><span>Cumulative Loss:</span><span id="roi-loss-inr" style="color:var(--accent-orange); font-weight:700;">₹---</span></div>
+                        <div class="progress-bar-container">
+                            <div id="roi-progress-bar" class="progress-bar"></div>
+                        </div>
+                        <div style="font-size: 0.65rem; display:flex; justify-content:space-between; margin-bottom: 6px; margin-top:-2px;">
+                            <span>Clean Status</span>
+                            <span>Threshold: ₹15,000</span>
+                        </div>
+                        <div id="roi-recommendation" style="font-size: 0.72rem; font-weight:600; padding: 0.35rem; border-radius: 6px; text-align:center; background:rgba(255,255,255,0.03);">
+                            Loading ROI analysis...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div class="chart-header">
+                        <h3>O&M Recommendations &amp; Reports</h3>
+                        <span class="chart-tag grid">Reporting</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <div id="om-summary-box" style="font-size: 0.72rem; line-height: 1.5; color: var(--text-secondary); max-height: 100px; overflow-y:auto;">
+                            Loading diagnostics...
+                        </div>
+                        <div style="border-top: 1px solid var(--card-border); padding-top: 8px; display: flex; gap: 8px; align-items: center;">
+                            <select id="report-format-select" style="background: rgba(20, 28, 47, 0.7); border:1px solid var(--card-border); color:var(--text-primary); padding: 0.3rem 0.5rem; border-radius: 6px; font-size: 0.72rem; outline:none; cursor:pointer;">
+                                <option value="csv">CSV Spreadsheet</option>
+                                <option value="html">HTML Webpage</option>
+                            </select>
+                            <button onclick="downloadReport()" style="flex: 1; background: var(--accent-lime); border: none; color: #0b0f19; padding: 0.4rem; border-radius: 6px; font-weight: 700; font-size: 0.72rem; cursor: pointer; transition: all 0.2s;">
+                                Generate &amp; Download
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+        
+        <!-- Alerts Toast Container -->
+        <div id="toast-container"></div>
 
         <!-- Right Chat Panel -->
         <div class="glass-card chat-panel">
@@ -439,6 +613,101 @@
 
     <script>
         let charts = {};
+        let activeTimeframe = 'live';
+        let customStart = '';
+        let customEnd = '';
+        let displayedAlerts = new Set();
+
+        function onTimeframeChange() {
+            const select = document.getElementById('timeframe-select');
+            activeTimeframe = select.value;
+            const customInputs = document.getElementById('custom-range-inputs');
+            if (activeTimeframe === 'custom') {
+                customInputs.style.display = 'inline-flex';
+            } else {
+                customInputs.style.display = 'none';
+                fetchAll();
+            }
+        }
+
+        function onCustomDateChange() {
+            customStart = document.getElementById('start-date').value;
+            customEnd = document.getElementById('end-date').value;
+            if (customStart && customEnd) {
+                fetchAll();
+            }
+        }
+
+        function getTimeframeParams() {
+            let start = '';
+            let end = '';
+            const today = "2026-06-24";
+            if (activeTimeframe === 'today') {
+                start = `${today} 00:00:00`;
+                end = `${today} 23:59:59`;
+            } else if (activeTimeframe === 'yesterday') {
+                start = `2026-06-23 00:00:00`;
+                end = `2026-06-23 23:59:59`;
+            } else if (activeTimeframe === 'week') {
+                start = `2026-06-18 00:00:00`;
+                end = `${today} 23:59:59`;
+            } else if (activeTimeframe === 'custom') {
+                if (customStart && customEnd) {
+                    start = `${customStart} 00:00:00`;
+                    end = `${customEnd} 23:59:59`;
+                }
+            }
+            return { start, end };
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            document.getElementById(`tab-btn-${tabId}`).classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            fetchAll();
+        }
+
+        function showToast(severity, message, assetId) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${severity === 'Critical' ? 'error-toast' : ''}`;
+            toast.innerHTML = `
+                <div class="toast-header">
+                    <span>${severity.toUpperCase()}: ${assetId.split('_').pop()}</span>
+                    <span class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+                </div>
+                <div>${message}</div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 6000);
+        }
+
+        function checkAlerts(alerts) {
+            alerts.forEach(alert => {
+                const key = alert.timestamp + alert.message;
+                if (!displayedAlerts.has(key)) {
+                    displayedAlerts.add(key);
+                    showToast(alert.severity, alert.message, alert.asset_id);
+                }
+            });
+        }
+
+        function downloadReport() {
+            const { start, end } = getTimeframeParams();
+            const format = document.getElementById('report-format-select').value;
+            let url = `/api/generate_report?format=${format}`;
+            if (start && end) {
+                url += `&start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}`;
+            }
+            window.open(url, '_blank');
+        }
 
         async function fetchSafe(url, defaultVal) {
             try {
@@ -460,33 +729,36 @@
         }
 
         async function fetchAll() {
+            const { start, end } = getTimeframeParams();
+            const queryParams = (start && end) ? `?start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}` : '';
+            
             try {
-                const [prData, bessData, soilingData, scbData, effData, irrData, thermalData, curtData] = await Promise.all([
-                    fetchSafe('/api/pr_gap', {
+                const [prData, bessData, soilingData, scbData, effData, irrData, thermalData, curtData, alertsData, roiData, forecastData] = await Promise.all([
+                    fetchSafe(`/api/pr_gap${queryParams}`, {
                         actual_kwh: 5628,
                         expected_kwh: 8140,
                         gap_kwh: 2512,
                         pr_actual: 0.7788,
                         attribution: {"Soiling": 1130.4, "Shading": 125.6, "Hardware Inefficiency": 628.0, "Grid Curtailment": 628.0}
                     }),
-                    fetchSafe('/api/bess_health', {
+                    fetchSafe(`/api/bess_health${queryParams}`, {
                         state_of_health_pct: 99.4,
                         total_cycles: 12,
                         coulombic_efficiency: 0.98,
                         bess_id: 'JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1',
                         status: 'Healthy'
                     }),
-                    fetchSafe('/api/soiling_rate', {
+                    fetchSafe(`/api/soiling_rate${queryParams}`, {
                         avg_daily_soiling_rate_pct: -0.22,
                         inferred_cleaning_dates: ["2026-06-12", "2026-06-25"]
                     }),
-                    fetchSafe('/api/scb_outliers', {
+                    fetchSafe(`/api/scb_outliers${queryParams}`, {
                         underperforming_strings: {},
                         normal_strings_count: 16,
                         mean_current: 8.5,
                         std_dev: 0.4
                     }),
-                    fetchSafe('/api/inverter_efficiency', {
+                    fetchSafe(`/api/inverter_efficiency${queryParams}`, {
                         fleet_avg_efficiency_pct: 95.6,
                         underperforming_inverters: [],
                         fleet_curve: [
@@ -502,7 +774,7 @@
                             {"load_bin": "90-100%", "avg_efficiency_pct": 95.8}
                         ]
                     }),
-                    fetchSafe('/api/irradiance_correlation', {
+                    fetchSafe(`/api/irradiance_correlation${queryParams}`, {
                         correlation_r2: 0.912,
                         anomaly_flag: 'Normal',
                         scatter_data: [
@@ -519,7 +791,7 @@
                             {"poa": 1000, "actual_kw": 7400, "expected_kw": 8500, "clipping": true}
                         ]
                     }),
-                    fetchSafe('/api/thermal_anomalies', {
+                    fetchSafe(`/api/thermal_anomalies${queryParams}`, {
                         anomaly_count: 0,
                         max_delta_c: 5.2,
                         status: 'Normal',
@@ -531,13 +803,40 @@
                             {"date": "2026-06-24", "avg_delta_c": 5.2}
                         ]
                     }),
-                    fetchSafe('/api/curtailment', {
+                    fetchSafe(`/api/curtailment${queryParams}`, {
                         plant_availability_pct: 99.93,
                         total_curtailment_hours: 4.5,
                         total_fault_hours: 0.0,
                         category_breakdown_hours: {"Running": 120.5, "Grid Curtailment": 4.5, "Fault/Trip": 0.0, "Nighttime": 108.0, "Standby": 7.0, "Scheduled Maintenance": 0.0},
                         estimated_curtailed_kwh: 38916
-                    })
+                    }),
+                    fetchSafe(`/api/alerts${queryParams}`, [
+                        {timestamp: "2026-06-24 11:20:00", asset_id: "JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", severity: "Warning", message: "BESS Cell voltage imbalance warning", status: "Active"}
+                    ]),
+                    fetchSafe(`/api/soiling_roi${queryParams}`, {
+                        last_cleaning_date: "2026-06-12",
+                        days_since_last_cleaning: 12,
+                        cumulative_loss_kwh: 1200.0,
+                        cumulative_loss_inr: 5400.0,
+                        daily_loss_kwh: 100.0,
+                        daily_loss_inr: 450.0,
+                        tipping_point_days: 22,
+                        days_remaining: 10,
+                        cleaning_recommended: false,
+                        optimal_cleaning_date: "2026-07-04",
+                        roi_pct: 0.0,
+                        cleaning_cost: 15000.0
+                    }),
+                    fetchSafe(`/api/forecast${queryParams}`, [
+                        {hour: "08:00", predicted_generation_kw: 150, bess_charge_discharge_kw: 0, bess_soc_pct: 20},
+                        {hour: "10:00", predicted_generation_kw: 1200, bess_charge_discharge_kw: 500, bess_soc_pct: 25},
+                        {hour: "12:00", predicted_generation_kw: 4500, bess_charge_discharge_kw: 2000, bess_soc_pct: 45},
+                        {hour: "14:00", predicted_generation_kw: 5200, bess_charge_discharge_kw: 2000, bess_soc_pct: 65},
+                        {hour: "16:00", predicted_generation_kw: 2100, bess_charge_discharge_kw: 0, bess_soc_pct: 65},
+                        {hour: "18:00", predicted_generation_kw: 100, bess_charge_discharge_kw: -1000, bess_soc_pct: 55},
+                        {hour: "20:00", predicted_generation_kw: 0, bess_charge_discharge_kw: -2000, bess_soc_pct: 35},
+                        {hour: "22:00", predicted_generation_kw: 0, bess_charge_discharge_kw: -1500, bess_soc_pct: 20}
+                    ])
                 ]);
 
                 // --- KPI Row 1 ---
@@ -563,11 +862,38 @@
                     document.getElementById('kpi-r2-sub').innerText = irrData.anomaly_flag || 'N/A';
                 } catch (e) { console.error("Error setting KPI Row 2:", e); }
 
+                // --- O&M Toast Alerts Sweeper ---
+                try { checkAlerts(alertsData || []); } catch(e) { console.error(e); }
+
+                // --- Soiling ROI Update ---
+                try {
+                    document.getElementById('roi-last-clean').innerText = roiData.last_cleaning_date || 'N/A';
+                    document.getElementById('roi-days-elapsed').innerText = `${roiData.days_since_last_cleaning || 0} days`;
+                    document.getElementById('roi-loss-inr').innerText = `₹${Math.round(roiData.cumulative_loss_inr || 0).toLocaleString()}`;
+                    
+                    const pct = Math.min(100, (roiData.cumulative_loss_inr / roiData.cleaning_cost) * 100);
+                    document.getElementById('roi-progress-bar').style.width = `${pct}%`;
+                    
+                    const recBox = document.getElementById('roi-recommendation');
+                    if (roiData.cleaning_recommended) {
+                        recBox.innerText = `CLEAN RECOMMENDED (ROI: ${roiData.roi_pct}%)`;
+                        recBox.style.background = 'rgba(239, 68, 68, 0.15)';
+                        recBox.style.color = '#f87171';
+                        recBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+                    } else {
+                        recBox.innerText = `Clean in ${roiData.days_remaining} days (${roiData.optimal_cleaning_date})`;
+                        recBox.style.background = 'rgba(16, 185, 129, 0.1)';
+                        recBox.style.color = '#34d399';
+                        recBox.style.border = '1px solid rgba(16, 185, 129, 0.2)';
+                    }
+                } catch(e) { console.error(e); }
+
                 // --- Charts ---
                 try { renderPrGap(prData.attribution || {}, prData.gap_kwh || 0); } catch(e) { console.error(e); }
                 try { renderEffCurve(effData.fleet_curve || []); } catch(e) { console.error(e); }
                 try { renderIrradiance(irrData.scatter_data || []); } catch(e) { console.error(e); }
                 try { renderCurtailment(curtData.category_breakdown_hours || {}); } catch(e) { console.error(e); }
+                try { renderForecast(forecastData || []); } catch(e) { console.error(e); }
 
                 // --- SCB Table ---
                 try { renderScbTable(scbData || {}); } catch(e) { console.error(e); }
@@ -680,6 +1006,87 @@
                         legend: { position: 'right', labels: { color: '#9ca3af', font: { size: 9 }, padding: 8, boxWidth: 10 } }
                     },
                     cutout: '60%'
+                }
+            });
+        }
+
+        function renderForecast(forecastData) {
+            destroyChart('forecast');
+            if (!forecastData || forecastData.length === 0) return;
+            const ctx = document.getElementById('forecastChart').getContext('2d');
+            charts['forecast'] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: forecastData.map(d => d.hour),
+                    datasets: [
+                        {
+                            label: 'Predicted Generation (kW)',
+                            data: forecastData.map(d => d.predicted_generation_kw),
+                            borderColor: '#8ab833',
+                            backgroundColor: 'rgba(138, 184, 51, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            yAxisID: 'y',
+                            pointRadius: 3
+                        },
+                        {
+                            label: 'BESS Dispatch (kW)',
+                            data: forecastData.map(d => d.bess_charge_discharge_kw),
+                            borderColor: '#0989b1',
+                            backgroundColor: 'rgba(9, 137, 177, 0.1)',
+                            fill: true,
+                            tension: 0.3,
+                            yAxisID: 'y',
+                            pointRadius: 3
+                        },
+                        {
+                            label: 'BESS SOC (%)',
+                            data: forecastData.map(d => d.bess_soc_pct),
+                            borderColor: '#4ab5c4',
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.4,
+                            yAxisID: 'ySoc',
+                            pointRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#9ca3af', font: { size: 9 }, boxWidth: 10 }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'Power (kW)', color: '#9ca3af', font: { size: 9 } },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#9ca3af', font: { size: 9 } }
+                        },
+                        ySoc: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            min: 0,
+                            max: 100,
+                            title: { display: true, text: 'SOC (%)', color: '#9ca3af', font: { size: 9 } },
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#9ca3af', font: { size: 9 } }
+                        },
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#9ca3af', font: { size: 9 } }
+                        }
+                    }
                 }
             });
         }
@@ -890,10 +1297,93 @@
 
         // High-Fidelity Client-side Chatbot Simulation for GitHub Pages
         function simulateChatbot(prompt) {
+            const res = _simulateChatbotRaw(prompt);
+            const lower = prompt.toLowerCase();
+            let timeframeMsg = "";
+            if (lower.includes("today")) {
+                res.thoughts.push("Relative date 'today' resolved (base time: 2026-06-26 14:50:23).");
+                res.thoughts.push("No live telemetry ingested after 2026-06-24. Falling back/clipping to latest database date: 2026-06-24.");
+                timeframeMsg = "\n\n> [!NOTE]\n> **Timeframe Alert**: Query timeframe 'today' (2026-06-26) was clipped/fell back to the latest recorded data day (**June 24, 2026**) since Continuous Telemetry Ingestion is skipped.";
+            } else if (lower.includes("yesterday")) {
+                res.thoughts.push("Relative date 'yesterday' resolved (base time: 2026-06-26 14:50:23).");
+                res.thoughts.push("No live telemetry ingested after 2026-06-24. Falling back/clipping to latest database date: 2026-06-24.");
+                timeframeMsg = "\n\n> [!NOTE]\n> **Timeframe Alert**: Query timeframe 'yesterday' (2026-06-25) was clipped/fell back to the latest recorded data day (**June 24, 2026**).";
+            }
+            if (timeframeMsg && res && res.response) {
+                res.response += timeframeMsg;
+            }
+            return res;
+        }
+
+        function _simulateChatbotRaw(prompt) {
             const lower = prompt.toLowerCase();
             let responseText = "";
             let thoughts = ["Initializing local telemetry diagnostics...", "API server offline, running client-side simulated agent..."];
             let chart = null;
+
+            // Troubleshooting RAG Simulation
+            const codes = prompt.match(/\b\d+\b/g);
+            let matchedManual = null;
+            if (codes) {
+                const manuals = {
+                    inverter: {
+                        "2": {
+                            name: "Curtailment (Grid Wait)",
+                            severity: "Info",
+                            description: "Inverter is throttled or waiting for grid dispatch control signals.",
+                            resolution: "No action required. System is waiting for Power Quality or Grid operator commands to resume full feed-in."
+                        },
+                        "3": {
+                            name: "Over-Temperature Fault",
+                            severity: "Warning",
+                            description: "Inverter internal heat sink temperature has exceeded safe operating limits.",
+                            resolution: "1. Inspect internal/external fans for dust blockage. 2. Clean the air intake filters. 3. Check for adequate ventilation clearances around the enclosure."
+                        },
+                        "4": {
+                            name: "String Current Imbalance",
+                            severity: "Warning",
+                            description: "Difference in string current input across SCBs exceeds 15% deviation limits.",
+                            resolution: "1. Check SCB string current fuses. 2. Inspect module strings for local shading or heavy dust build-up. 3. Verify DC input connector isolation resistances."
+                        }
+                    },
+                    battery: {
+                        "501": {
+                            name: "Cell Voltage Imbalance",
+                            severity: "Warning",
+                            description: "The difference between individual cell voltages in a rack exceeds the maximum allowable threshold.",
+                            resolution: "1. Trigger and run a manual cell equalization cycle via the battery management system (BMS). 2. Check connections and torque on cell link bars. 3. Replace cell module if delta persists after equalization."
+                        }
+                    },
+                    weather: {
+                        "101": {
+                            name: "Irradiance Sensor Desynchronization",
+                            severity: "Warning",
+                            description: "Plane of Array (sensor) output differs from adjacent sensor by >50 W/m².",
+                            resolution: "1. Clean the pyranometer glass window. 2. Verify pyranometer levelling and alignment angles. 3. Recalibrate sensor offset values."
+                        }
+                    }
+                };
+                for (const code of codes) {
+                    for (const dev of ["inverter", "battery", "weather"]) {
+                        if (manuals[dev][code]) {
+                            matchedManual = { dev, code, info: manuals[dev][code] };
+                            break;
+                        }
+                    }
+                    if (matchedManual) break;
+                }
+            }
+
+            if (matchedManual) {
+                thoughts.push(`Matching troubleshooting guide for ${matchedManual.dev} code ${matchedManual.code}...`);
+                const info = matchedManual.info;
+                responseText = `### Troubleshooting Guidelines: ${info.name} (${matchedManual.dev.toUpperCase()} Code ${matchedManual.code})\n\n` +
+                               `*   **Severity**: **${info.severity}**\n` +
+                               `*   **Description**: ${info.description}\n\n` +
+                               `#### Recommended Resolution Steps:\n` +
+                               info.resolution.split('. ').map(s => s.trim() ? `1. ${s.replace(/^\d+\.\s*/, '')}` : '').filter(s => s).join('\n');
+                return { response: responseText, thoughts, chart: null };
+            }
 
             // 1. Weather SQL Query Simulation (Checks weather first to prevent generic SQL overrides)
             if (lower.includes("weather") && (lower.includes("sql") || lower.includes("select") || lower.includes("telemetry"))) {

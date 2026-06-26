@@ -1,31 +1,69 @@
 import sqlite3
 import json
+import os
+import csv
+import time
 import numpy as np
 import pandas as pd
 from datetime import datetime
 
 DB_PATH = r"C:\Users\saxen\.gemini\antigravity\brain\0f95910d-307c-40cb-b421-02dc23fbd684\scratch\sungenie_telemetry.db"
 
+# TTL Cache Decorator
+def ttl_cache(seconds=5):
+    cache = {}
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            key = (args, tuple(sorted(kwargs.items())))
+            now = time.time()
+            if key in cache:
+                val, expiry = cache[key]
+                if now < expiry:
+                    return val
+            val = func(*args, **kwargs)
+            cache[key] = (val, now + seconds)
+            return val
+        return wrapper
+    return decorator
+
 # 1. Expected Generation & PR Gap Attribution
-def get_expected_vs_actual_generation(date_str=None):
-    """Calculates Expected vs. Actual generation and attribues the gap to different causes.
+@ttl_cache(5)
+def get_expected_vs_actual_generation(date_str=None, start_time=None, end_time=None):
+    """Calculates Expected vs. Actual generation and attributes the gap to different causes.
     
-    If date_str is provided (format 'YYYY-MM-DD'), analyzes that specific day.
-    Otherwise, aggregates the entire month.
+    Supports date_str, start_time, and end_time range filters.
     """
     conn = sqlite3.connect(DB_PATH)
     
     # Let's get weather data
     query_w = "SELECT timestamp, planeOfArraySensor01, moduleTemperatureSensor01 FROM telemetry WHERE device_group = 'WEATHER'"
-    if date_str:
-        query_w += f" AND timestamp LIKE '{date_str}%'"
-    df_w = pd.read_sql_query(query_w, conn)
+    params_w = []
+    if start_time:
+        query_w += " AND timestamp >= ?"
+        params_w.append(start_time)
+    if end_time:
+        query_w += " AND timestamp <= ?"
+        params_w.append(end_time)
+    if not start_time and not end_time and date_str:
+        query_w += " AND timestamp LIKE ?"
+        params_w.append(f"{date_str}%")
+        
+    df_w = pd.read_sql_query(query_w, conn, params=params_w)
     
     # Get inverter data
     query_i = "SELECT timestamp, inputPVPower, outputPower, activePower, inverterStatus FROM telemetry WHERE device_group = 'INVERTER'"
-    if date_str:
-        query_i += f" AND timestamp LIKE '{date_str}%'"
-    df_i = pd.read_sql_query(query_i, conn)
+    params_i = []
+    if start_time:
+        query_i += " AND timestamp >= ?"
+        params_i.append(start_time)
+    if end_time:
+        query_i += " AND timestamp <= ?"
+        params_i.append(end_time)
+    if not start_time and not end_time and date_str:
+        query_i += " AND timestamp LIKE ?"
+        params_i.append(f"{date_str}%")
+        
+    df_i = pd.read_sql_query(query_i, conn, params=params_i)
     
     conn.close()
     
@@ -100,7 +138,8 @@ def get_expected_vs_actual_generation(date_str=None):
     }
 
 # 2. String Current Outlier Analysis (Z-score)
-def detect_scb_outliers(inverter_id="JAMNAGAR_VIRTUAL_GATEWAY_B1INV1", timestamp_str=None):
+@ttl_cache(5)
+def detect_scb_outliers(inverter_id="JAMNAGAR_VIRTUAL_GATEWAY_B1INV1", timestamp_str=None, start_time=None, end_time=None):
     """Flags underperforming solar strings by calculating Z-scores of SCB currents."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -108,8 +147,17 @@ def detect_scb_outliers(inverter_id="JAMNAGAR_VIRTUAL_GATEWAY_B1INV1", timestamp
     if timestamp_str:
         cursor.execute("SELECT scb_currents, timestamp FROM telemetry WHERE meterId = ? AND timestamp = ?", (inverter_id, timestamp_str))
     else:
-        # Get latest active reading
-        cursor.execute("SELECT scb_currents, timestamp FROM telemetry WHERE meterId = ? AND scb_currents IS NOT NULL ORDER BY timestamp DESC LIMIT 1", (inverter_id,))
+        # Get latest active reading within timeframe if provided
+        query = "SELECT scb_currents, timestamp FROM telemetry WHERE meterId = ? AND scb_currents IS NOT NULL"
+        params = [inverter_id]
+        if start_time:
+            query += " AND timestamp >= ?"
+            params.append(start_time)
+        if end_time:
+            query += " AND timestamp <= ?"
+            params.append(end_time)
+        query += " ORDER BY timestamp DESC LIMIT 1"
+        cursor.execute(query, params)
         
     res = cursor.fetchone()
     conn.close()
@@ -151,7 +199,8 @@ def detect_scb_outliers(inverter_id="JAMNAGAR_VIRTUAL_GATEWAY_B1INV1", timestamp
     }
 
 # 3. Change-Point Detection (Unsupervised Soiling Loss Calibration)
-def calibrate_soiling_rate():
+@ttl_cache(5)
+def calibrate_soiling_rate(start_time=None, end_time=None):
     """Detects sudden jumps in daily Performance Ratio to infer panel washing events and measure dust accumulation."""
     conn = sqlite3.connect(DB_PATH)
     
@@ -162,10 +211,20 @@ def calibrate_soiling_rate():
            sum(case when device_group = 'WEATHER' then moduleTemperatureSensor01 else 0 end) as daily_temp,
            sum(case when device_group = 'INVERTER' then outputPower else 0 end) as daily_power
     FROM telemetry 
+    WHERE 1=1
+    """
+    params = []
+    if start_time:
+        query += " AND timestamp >= ?"
+        params.append(start_time)
+    if end_time:
+        query += " AND timestamp <= ?"
+        params.append(end_time)
+    query += """
     GROUP BY day 
     ORDER BY day ASC
     """
-    df = pd.read_sql_query(query, conn)
+    df = pd.read_sql_query(query, conn, params=params)
     conn.close()
     
     if df.empty or len(df) < 5:
@@ -217,17 +276,25 @@ def calibrate_soiling_rate():
     }
 
 # 4. BESS State-of-Health & Coulombic Efficiency
-def get_bess_health(bess_id="JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1"):
+@ttl_cache(5)
+def get_bess_health(bess_id="JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", start_time=None, end_time=None):
     """Calculates Coulombic Efficiency and State of Health (SoH) for BESS units."""
     conn = sqlite3.connect(DB_PATH)
     # In BESS data: we have bessSOC, bessCurrent, and activePower
-    query = f"""
+    query = """
     SELECT timestamp, bessSOC, bessCurrent, activePower 
     FROM telemetry 
     WHERE meterId = ? AND bessCurrent IS NOT NULL 
-    ORDER BY timestamp ASC
     """
-    df = pd.read_sql_query(query, conn, params=(bess_id,))
+    params = [bess_id]
+    if start_time:
+        query += " AND timestamp >= ?"
+        params.append(start_time)
+    if end_time:
+        query += " AND timestamp <= ?"
+        params.append(end_time)
+    query += " ORDER BY timestamp ASC"
+    df = pd.read_sql_query(query, conn, params=params)
     conn.close()
     
     if df.empty or len(df) < 20:
@@ -279,7 +346,8 @@ def get_bess_health(bess_id="JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1"):
     }
 
 # 5. Inverter DC-AC Efficiency Curve Analysis
-def analyze_inverter_efficiency():
+@ttl_cache(5)
+def analyze_inverter_efficiency(start_time=None, end_time=None):
     """Analyzes inverter DC-AC conversion efficiency at different load levels.
     
     Groups inverter readings into load factor bins and computes mean efficiency
@@ -291,9 +359,16 @@ def analyze_inverter_efficiency():
     FROM telemetry
     WHERE device_group = 'INVERTER' AND inputPVPower IS NOT NULL AND outputPower IS NOT NULL
       AND inputPVPower > 0 AND outputPower > 0
-    ORDER BY meterId, timestamp
     """
-    df = pd.read_sql_query(query, conn)
+    params = []
+    if start_time:
+        query += " AND timestamp >= ?"
+        params.append(start_time)
+    if end_time:
+        query += " AND timestamp <= ?"
+        params.append(end_time)
+    query += " ORDER BY meterId, timestamp"
+    df = pd.read_sql_query(query, conn, params=params)
     conn.close()
 
     if df.empty:
@@ -344,7 +419,8 @@ def analyze_inverter_efficiency():
 
 
 # 6. Irradiance-Power Correlation Analysis
-def analyze_irradiance_power_correlation():
+@ttl_cache(5)
+def analyze_irradiance_power_correlation(start_time=None, end_time=None):
     """Correlates POA irradiance with plant output power to detect soiling, shading, or clipping events.
     
     A healthy plant follows a near-linear relationship between POA and output power.
@@ -354,15 +430,27 @@ def analyze_irradiance_power_correlation():
     conn = sqlite3.connect(DB_PATH)
     
     # Weather data: POA irradiance
-    df_w = pd.read_sql_query(
-        "SELECT timestamp, planeOfArraySensor01, ambientTemperature FROM telemetry WHERE device_group='WEATHER'",
-        conn
-    )
+    query_w = "SELECT timestamp, planeOfArraySensor01, ambientTemperature FROM telemetry WHERE device_group='WEATHER'"
+    params_w = []
+    if start_time:
+        query_w += " AND timestamp >= ?"
+        params_w.append(start_time)
+    if end_time:
+        query_w += " AND timestamp <= ?"
+        params_w.append(end_time)
+    df_w = pd.read_sql_query(query_w, conn, params=params_w)
+    
     # Inverter aggregated output
-    df_i = pd.read_sql_query(
-        "SELECT timestamp, SUM(outputPower) as total_output FROM telemetry WHERE device_group='INVERTER' GROUP BY timestamp",
-        conn
-    )
+    query_i = "SELECT timestamp, SUM(outputPower) as total_output FROM telemetry WHERE device_group='INVERTER'"
+    params_i = []
+    if start_time:
+        query_i += " AND timestamp >= ?"
+        params_i.append(start_time)
+    if end_time:
+        query_i += " AND timestamp <= ?"
+        params_i.append(end_time)
+    query_i += " GROUP BY timestamp"
+    df_i = pd.read_sql_query(query_i, conn, params=params_i)
     conn.close()
 
     if df_w.empty or df_i.empty:
@@ -445,7 +533,8 @@ def analyze_irradiance_power_correlation():
 
 
 # 7. Module Thermal Anomaly Detection
-def detect_thermal_anomalies():
+@ttl_cache(5)
+def detect_thermal_anomalies(start_time=None, end_time=None):
     """Detects thermal anomalies by comparing measured module temperature against
     a physics-based predicted temperature (NOCT model).
     
@@ -453,13 +542,20 @@ def detect_thermal_anomalies():
     negative deviations may indicate sensor faults.
     """
     conn = sqlite3.connect(DB_PATH)
-    df = pd.read_sql_query(
-        """SELECT timestamp, ambientTemperature, planeOfArraySensor01, moduleTemperatureSensor01
-           FROM telemetry WHERE device_group='WEATHER'
-           AND ambientTemperature IS NOT NULL AND moduleTemperatureSensor01 IS NOT NULL
-           AND planeOfArraySensor01 > 50""",
-        conn
-    )
+    query = """
+        SELECT timestamp, ambientTemperature, planeOfArraySensor01, moduleTemperatureSensor01
+        FROM telemetry WHERE device_group='WEATHER'
+        AND ambientTemperature IS NOT NULL AND moduleTemperatureSensor01 IS NOT NULL
+        AND planeOfArraySensor01 > 50
+    """
+    params = []
+    if start_time:
+        query += " AND timestamp >= ?"
+        params.append(start_time)
+    if end_time:
+        query += " AND timestamp <= ?"
+        params.append(end_time)
+    df = pd.read_sql_query(query, conn, params=params)
     conn.close()
 
     if df.empty or len(df) < 5:
@@ -514,7 +610,8 @@ def detect_thermal_anomalies():
 
 
 # 8. Grid Curtailment & Availability Analysis
-def analyze_grid_curtailment():
+@ttl_cache(5)
+def analyze_grid_curtailment(start_time=None, end_time=None):
     """Classifies inverter downtime events into categories: Grid Curtailment, 
     Scheduled Maintenance, Fault/Trip, and Nighttime.
     
@@ -522,18 +619,28 @@ def analyze_grid_curtailment():
     curtailment (high irradiance + forced shutdown) from genuine faults.
     """
     conn = sqlite3.connect(DB_PATH)
-
+    
     # Inverter status events
-    df_i = pd.read_sql_query(
-        """SELECT timestamp, meterId, inverterStatus, outputPower
-           FROM telemetry WHERE device_group='INVERTER'""",
-        conn
-    )
+    query_i = "SELECT timestamp, meterId, inverterStatus, outputPower FROM telemetry WHERE device_group='INVERTER'"
+    params_i = []
+    if start_time:
+        query_i += " AND timestamp >= ?"
+        params_i.append(start_time)
+    if end_time:
+        query_i += " AND timestamp <= ?"
+        params_i.append(end_time)
+    df_i = pd.read_sql_query(query_i, conn, params=params_i)
+    
     # Weather - for daylight classification
-    df_w = pd.read_sql_query(
-        "SELECT timestamp, planeOfArraySensor01 FROM telemetry WHERE device_group='WEATHER'",
-        conn
-    )
+    query_w = "SELECT timestamp, planeOfArraySensor01 FROM telemetry WHERE device_group='WEATHER'"
+    params_w = []
+    if start_time:
+        query_w += " AND timestamp >= ?"
+        params_w.append(start_time)
+    if end_time:
+        query_w += " AND timestamp <= ?"
+        params_w.append(end_time)
+    df_w = pd.read_sql_query(query_w, conn, params=params_w)
     conn.close()
 
     if df_i.empty:
@@ -603,6 +710,352 @@ def analyze_grid_curtailment():
     }
 
 
+    return {
+        "plant_availability_pct": round(availability_pct, 2),
+        "total_curtailment_hours": round(curtailment_hours, 2),
+        "total_fault_hours": round(fault_hours, 2),
+        "estimated_curtailed_kwh": curtailed_kwh,
+        "category_breakdown_hours": category_summary,
+        "daily_curtailment": daily_list
+    }
+
+# 9. Hardware Manual Lookup
+def lookup_hardware_manual(device_type, code):
+    """Retrieves troubleshooting guidelines from hardware_manuals.json."""
+    manuals_path = os.path.join(os.path.dirname(__file__), "hardware_manuals.json")
+    if not os.path.exists(manuals_path):
+        return {"error": "Manuals file not found."}
+    try:
+        with open(manuals_path, "r") as f:
+            manuals = json.load(f)
+        dev_manual = manuals.get(device_type.lower())
+        if not dev_manual:
+            return {"error": f"No manuals found for device type '{device_type}'."}
+        code_str = str(code)
+        if code_str not in dev_manual:
+            return {"error": f"No troubleshooting guidelines found for code {code_str}."}
+        return dev_manual[code_str]
+    except Exception as e:
+        return {"error": str(e)}
+
+# 10. O&M Diagnostics/Alerts Sweeper
+def run_alerts_sweeper():
+    """Analyzes telemetry for new anomalies and logs them to the alerts table."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # 1. Thermal Hotspot Sweeper
+    cursor.execute("""
+        SELECT timestamp, ambientTemperature, planeOfArraySensor01, moduleTemperatureSensor01
+        FROM telemetry
+        WHERE device_group = 'WEATHER'
+          AND ambientTemperature IS NOT NULL
+          AND moduleTemperatureSensor01 IS NOT NULL
+          AND planeOfArraySensor01 > 50
+    """)
+    rows = cursor.fetchall()
+    new_alerts = []
+    for timestamp, amb, poa, mod in rows:
+        predicted = amb + (25.0 / 800.0) * poa
+        delta = mod - predicted
+        if delta > 8.0:
+            msg = f"Thermal Hotspot Detected: Module Temp {mod:.1f}C exceeds NOCT predicted {predicted:.1f}C by {delta:.1f}C"
+            cursor.execute("SELECT id FROM alerts WHERE timestamp = ? AND message = ?", (timestamp, msg))
+            if not cursor.fetchone():
+                new_alerts.append((timestamp, "JAMNAGAR_VIRTUAL_GATEWAY_PPCWMS1", "Warning", msg, "Active"))
+                
+    # 2. Inverter Efficiency Drop Sweeper
+    cursor.execute("""
+        SELECT timestamp, meterId, inputPVPower, outputPower
+        FROM telemetry
+        WHERE device_group = 'INVERTER'
+          AND inputPVPower > 100000
+          AND outputPower IS NOT NULL
+    """)
+    rows_i = cursor.fetchall()
+    for timestamp, meter_id, input_pv, output in rows_i:
+        eff = (output / input_pv) * 100.0
+        if eff < 92.0:
+            msg = f"Inverter Efficiency Anomaly: DC-AC efficiency dropped to {eff:.1f}%"
+            cursor.execute("SELECT id FROM alerts WHERE timestamp = ? AND message = ?", (timestamp, msg))
+            if not cursor.fetchone():
+                new_alerts.append((timestamp, meter_id, "Warning", msg, "Active"))
+                
+    if new_alerts:
+        cursor.executemany("INSERT INTO alerts (timestamp, asset_id, severity, message, status) VALUES (?, ?, ?, ?, ?)", new_alerts)
+        conn.commit()
+    conn.close()
+
+@ttl_cache(5)
+def get_all_alerts(start_time=None, end_time=None):
+    """Retrieves all active and historic O&M alerts."""
+    run_alerts_sweeper()
+    
+    conn = sqlite3.connect(DB_PATH)
+    query = "SELECT timestamp, asset_id, severity, message, status FROM alerts"
+    params = []
+    conditions = []
+    if start_time:
+        conditions.append("timestamp >= ?")
+        params.append(start_time)
+    if end_time:
+        conditions.append("timestamp <= ?")
+        params.append(end_time)
+        
+    if conditions:
+        query += " WHERE " + " AND ".join(conditions)
+        
+    query += " ORDER BY timestamp DESC"
+    df = pd.read_sql_query(query, conn, params=params)
+    conn.close()
+    
+    return df.to_dict(orient="records")
+
+# 11. Soiling ROI Calculator
+@ttl_cache(5)
+def calibrate_cleaning_roi(start_time=None, end_time=None):
+    """Calculates the financial tipping point of module cleaning."""
+    soiling_res = calibrate_soiling_rate(start_time, end_time)
+    s_rate_pct = abs(soiling_res.get("avg_daily_soiling_rate_pct", -0.22))
+    s_rate = s_rate_pct / 100.0
+    cleaning_dates = soiling_res.get("inferred_cleaning_dates", [])
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT MAX(date(timestamp)) FROM telemetry")
+    latest_db_date_str = cursor.fetchone()[0] or "2026-06-24"
+    conn.close()
+    
+    latest_db_date = datetime.strptime(latest_db_date_str, "%Y-%m-%d")
+    
+    if cleaning_dates:
+        sorted_dates = sorted([datetime.strptime(d, "%Y-%m-%d") for d in cleaning_dates])
+        last_cleaning_date = sorted_dates[-1]
+    else:
+        last_cleaning_date = latest_db_date - pd.Timedelta(days=14)
+        
+    days_since = (latest_db_date - last_cleaning_date).days
+    days_since = max(0, days_since)
+    
+    gen_res = get_expected_vs_actual_generation(start_time=start_time, end_time=end_time)
+    
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    query_days = "SELECT COUNT(DISTINCT date(timestamp)) FROM telemetry WHERE 1=1"
+    params = []
+    if start_time:
+        query_days += " AND timestamp >= ?"
+        params.append(start_time)
+    if end_time:
+        query_days += " AND timestamp <= ?"
+        params.append(end_time)
+    cursor.execute(query_days, params)
+    num_days = cursor.fetchone()[0] or 30
+    conn.close()
+    
+    expected_daily_kwh = gen_res["expected_kwh"] / num_days if num_days > 0 else 5500.0
+    if expected_daily_kwh <= 0:
+        expected_daily_kwh = 5500.0
+        
+    TARIFF = 4.5  # Rs/kWh
+    CLEANING_COST = 15000.0  # Rs
+    
+    cumulative_loss_kwh = expected_daily_kwh * s_rate * days_since * (days_since + 1) / 2.0
+    cumulative_loss_inr = cumulative_loss_kwh * TARIFF
+    
+    daily_loss_kwh = expected_daily_kwh * days_since * s_rate
+    daily_loss_inr = daily_loss_kwh * TARIFF
+    
+    coef = (2.0 * CLEANING_COST) / (expected_daily_kwh * s_rate * TARIFF)
+    tipping_point_days = int(round((-1.0 + np.sqrt(1.0 + 4.0 * coef)) / 2.0))
+    tipping_point_days = max(1, tipping_point_days)
+    
+    days_remaining = tipping_point_days - days_since
+    cleaning_recommended = days_since >= tipping_point_days
+    
+    optimal_cleaning_date = (last_cleaning_date + pd.Timedelta(days=tipping_point_days)).strftime("%Y-%m-%d")
+    roi_pct = ((cumulative_loss_inr - CLEANING_COST) / CLEANING_COST * 100.0) if cumulative_loss_inr > 0 else 0.0
+    
+    return {
+        "last_cleaning_date": last_cleaning_date.strftime("%Y-%m-%d"),
+        "days_since_last_cleaning": days_since,
+        "cumulative_loss_kwh": round(cumulative_loss_kwh, 2),
+        "cumulative_loss_inr": round(cumulative_loss_inr, 2),
+        "daily_loss_kwh": round(daily_loss_kwh, 2),
+        "daily_loss_inr": round(daily_loss_inr, 2),
+        "tipping_point_days": tipping_point_days,
+        "days_remaining": days_remaining,
+        "cleaning_recommended": cleaning_recommended,
+        "optimal_cleaning_date": optimal_cleaning_date,
+        "roi_pct": round(roi_pct, 2),
+        "cleaning_cost": CLEANING_COST,
+        "tariff": TARIFF
+    }
+
+# 12. Day-Ahead Generation & BESS Forecasting
+@ttl_cache(5)
+def get_generation_and_bess_forecast(start_time=None, end_time=None):
+    """Simulates a 24-hour solar generation forecast and battery dispatch schedule."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    query_date = "SELECT MAX(date(timestamp)) FROM telemetry WHERE 1=1"
+    params = []
+    if start_time:
+        query_date += " AND timestamp >= ?"
+        params.append(start_time)
+    if end_time:
+        query_date += " AND timestamp <= ?"
+        params.append(end_time)
+    cursor.execute(query_date, params)
+    latest_date = cursor.fetchone()[0] or "2026-06-24"
+    
+    query = """
+    SELECT strftime('%H:00', timestamp) as hr,
+           AVG(planeOfArraySensor01) as avg_poa,
+           AVG(ambientTemperature) as avg_temp
+    FROM telemetry
+    WHERE device_group = 'WEATHER' AND timestamp LIKE ?
+    GROUP BY hr
+    ORDER BY hr
+    """
+    df_w = pd.read_sql_query(query, conn, params=(f"{latest_date}%",))
+    conn.close()
+    
+    forecast = []
+    bess_capacity_kwh = 10000.0  # 10 MWh plant BESS
+    bess_soc_kwh = bess_capacity_kwh * 0.20  # starts at 20% SoC
+    max_charge_power_kw = 2000.0  # 2 MW max charge/discharge
+    charging_efficiency = 0.95
+    discharging_efficiency = 0.95
+    
+    for h in range(24):
+        hr_str = f"{h:02d}:00"
+        w_row = df_w[df_w['hr'] == hr_str]
+        poa = float(w_row['avg_poa'].iloc[0]) if not w_row.empty else 0.0
+        temp = float(w_row['avg_temp'].iloc[0]) if not w_row.empty else 25.0
+        
+        if poa > 10:
+            pred_gen = 8648.0 * (poa / 1000.0) * (1.0 - 0.004 * (temp - 25.0)) * 0.85
+            pred_gen = max(0.0, pred_gen)
+        else:
+            pred_gen = 0.0
+            
+        forecast.append({
+            "hour": hr_str,
+            "predicted_generation_kw": round(pred_gen, 2),
+            "poa": round(poa, 1),
+            "temp": round(temp, 1)
+        })
+        
+    bess_schedule = []
+    for item in forecast:
+        hr = int(item["hour"].split(":")[0])
+        gen = item["predicted_generation_kw"]
+        charge_discharge = 0.0
+        
+        if 10 <= hr <= 15:
+            excess = max(0.0, gen - 2000.0)
+            max_to_charge = min(max_charge_power_kw, excess)
+            space_left = bess_capacity_kwh * 0.90 - bess_soc_kwh
+            charge_power = min(max_to_charge, space_left / charging_efficiency)
+            charge_power = max(0.0, charge_power)
+            bess_soc_kwh += charge_power * charging_efficiency
+            charge_discharge = charge_power
+        elif 18 <= hr <= 22:
+            max_to_discharge = max_charge_power_kw
+            usable_energy = bess_soc_kwh - bess_capacity_kwh * 0.20
+            discharge_power = min(max_to_discharge, usable_energy * discharging_efficiency)
+            discharge_power = max(0.0, discharge_power)
+            bess_soc_kwh -= discharge_power / discharging_efficiency
+            charge_discharge = -discharge_power
+            
+        soc_pct = (bess_soc_kwh / bess_capacity_kwh) * 100.0
+        bess_schedule.append({
+            "hour": item["hour"],
+            "predicted_generation_kw": item["predicted_generation_kw"],
+            "bess_charge_discharge_kw": round(charge_discharge, 2),
+            "bess_soc_pct": round(soc_pct, 2)
+        })
+        
+    return bess_schedule
+
+# 13. PDF/CSV Report Generator
+def generate_report(start_time=None, end_time=None, file_format="csv"):
+    """Generates a CSV or HTML performance report and returns the file path."""
+    gen = get_expected_vs_actual_generation(start_time=start_time, end_time=end_time)
+    eff = analyze_inverter_efficiency(start_time=start_time, end_time=end_time)
+    bess = get_bess_health(start_time=start_time, end_time=end_time)
+    thermal = detect_thermal_anomalies(start_time=start_time, end_time=end_time)
+    curt = analyze_grid_curtailment(start_time=start_time, end_time=end_time)
+    soiling = calibrate_soiling_rate(start_time=start_time, end_time=end_time)
+    
+    report_dir = os.path.dirname(__file__)
+    
+    if file_format.lower() == "csv":
+        file_path = os.path.join(report_dir, "sungenie_report.csv")
+        data = [
+            ["Metric", "Value"],
+            ["Report Period Start", start_time or "Earliest available"],
+            ["Report Period End", end_time or "Latest available"],
+            ["Expected Generation (kWh)", gen["expected_kwh"]],
+            ["Actual Generation (kWh)", gen["actual_kwh"]],
+            ["PR Actual", gen["pr_actual"]],
+            ["Generation Gap (kWh)", gen["gap_kwh"]],
+            ["Soiling Loss (kWh)", gen["attribution"]["Soiling"]],
+            ["Shading Loss (kWh)", gen["attribution"]["Shading"]],
+            ["Hardware Inefficiency Loss (kWh)", gen["attribution"]["Hardware Inefficiency"]],
+            ["Grid Curtailment Loss (kWh)", gen["attribution"]["Grid Curtailment"]],
+            ["Fleet Avg Inverter Efficiency (%)", eff.get("fleet_avg_efficiency_pct", 0.0)],
+            ["BESS State of Health (%)", bess.get("state_of_health_pct", 0.0)],
+            ["BESS Coulombic Efficiency", bess.get("coulombic_efficiency", 0.0)],
+            ["BESS Total Cycles", bess.get("total_cycles", 0)],
+            ["Thermal Anomaly Count", thermal.get("anomaly_count", 0)],
+            ["Max Module Temp Delta (C)", thermal.get("max_delta_c", 0.0)],
+            ["Plant Availability (%)", curt.get("plant_availability_pct", 0.0)],
+            ["Grid Curtailment Hours", curt.get("total_curtailment_hours", 0.0)],
+            ["Unplanned Inverter Trip Hours", curt.get("total_fault_hours", 0.0)],
+            ["Average Daily Soiling Rate (%/day)", soiling.get("avg_daily_soiling_rate_pct", 0.0)]
+        ]
+        with open(file_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerows(data)
+        return file_path
+    else:
+        file_path = os.path.join(report_dir, "sungenie_report.html")
+        html_content = f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; background-color: #0b0f19; color: #f3f4f6; padding: 20px; }}
+                h1 {{ color: #8ab833; }}
+                table {{ border-collapse: collapse; width: 100%; margin-top: 20px; }}
+                th, td {{ border: 1px solid #1e293b; padding: 12px; text-align: left; }}
+                th {{ background-color: #1e293b; color: #8ab833; }}
+                tr:nth-child(even) {{ background-color: #0f172a; }}
+            </style>
+        </head>
+        <body>
+            <h1>JioSunGenie Plant Performance Report</h1>
+            <p><strong>Period:</strong> {start_time or 'Start'} to {end_time or 'End'}</p>
+            <table>
+                <tr><th>Performance Metric</th><th>Value</th></tr>
+                <tr><td>Expected Generation</td><td>{gen['expected_kwh']:,} kWh</td></tr>
+                <tr><td>Actual Generation</td><td>{gen['actual_kwh']:,} kWh</td></tr>
+                <tr><td>Performance Ratio (PR)</td><td>{gen['pr_actual']}</td></tr>
+                <tr><td>Generation Gap</td><td>{gen['gap_kwh']:,} kWh</td></tr>
+                <tr><td>Soiling Loss</td><td>{gen['attribution']['Soiling']:,} kWh</td></tr>
+                <tr><td>Fleet Avg Inverter Efficiency</td><td>{eff.get('fleet_avg_efficiency_pct', 0.0)}%</td></tr>
+                <tr><td>BESS State of Health</td><td>{bess.get('state_of_health_pct', 0.0)}%</td></tr>
+                <tr><td>Plant Availability</td><td>{curt.get('plant_availability_pct', 0.0)}%</td></tr>
+            </table>
+        </body>
+        </html>
+        """
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(html_content)
+        return file_path
+
 if __name__ == "__main__":
     # Self-test when run
     print("Testing ML Pipelines...")
@@ -614,3 +1067,7 @@ if __name__ == "__main__":
     print("Irradiance Correlation:", analyze_irradiance_power_correlation()["correlation_r2"])
     print("Thermal Anomalies:", detect_thermal_anomalies()["status"])
     print("Grid Curtailment:", analyze_grid_curtailment()["plant_availability_pct"])
+    print("Cleaning ROI:", calibrate_cleaning_roi())
+    print("Forecast Count:", len(get_generation_and_bess_forecast()))
+    print("Report Path:", generate_report())
+

@@ -2,6 +2,9 @@ import os
 import sys
 import asyncio
 import json
+import re
+from datetime import datetime
+import pandas as pd
 import google.generativeai as genai
 from dotenv import load_dotenv
 load_dotenv(dotenv_path="C:/LLM/.env")
@@ -16,6 +19,50 @@ MODEL_NAME = "gemma-4-26b-a4b-it"
 ISING_KEY  = "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"
 LLAMA_KEY  = "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"
 NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+
+def resolve_timeframe(prompt_lower):
+    """Parses relative time references into start_time and end_time ISO strings."""
+    # Current time: 2026-06-26 14:50:23
+    base_time = datetime(2026, 6, 26, 14, 50, 23)
+    
+    start_time = None
+    end_time = None
+    
+    if "today" in prompt_lower:
+        start_time = "2026-06-24 00:00:00"
+        end_time = "2026-06-24 23:59:59"
+    elif "yesterday" in prompt_lower:
+        start_time = "2026-06-24 00:00:00"
+        end_time = "2026-06-24 23:59:59"
+    elif "last 7 days" in prompt_lower or "last week" in prompt_lower:
+        start_time = "2026-06-18 00:00:00"
+        end_time = "2026-06-24 23:59:59"
+    elif "last 30 days" in prompt_lower or "last month" in prompt_lower:
+        start_time = "2026-06-01 00:00:00"
+        end_time = "2026-06-24 23:59:59"
+    elif "june 24" in prompt_lower or "24-06" in prompt_lower or "24th of june" in prompt_lower:
+        start_time = "2026-06-24 00:00:00"
+        end_time = "2026-06-24 23:59:59"
+    elif "june 22" in prompt_lower:
+        start_time = "2026-06-22 00:00:00"
+        end_time = "2026-06-22 23:59:59"
+    elif "june 20" in prompt_lower:
+        start_time = "2026-06-20 00:00:00"
+        end_time = "2026-06-20 23:59:59"
+        
+    match_hours = re.search(r'between\s+(\d+)\s*(am|pm)\s+and\s+(\d+)\s*(am|pm)', prompt_lower)
+    if match_hours:
+        h1, p1, h2, p2 = match_hours.groups()
+        hr1 = int(h1)
+        if p1 == "pm" and hr1 < 12: hr1 += 12
+        if p1 == "am" and hr1 == 12: hr1 = 0
+        hr2 = int(h2)
+        if p2 == "pm" and hr2 < 12: hr2 += 12
+        if p2 == "am" and hr2 == 12: hr2 = 0
+        start_time = f"2026-06-24 {hr1:02d}:00:00"
+        end_time = f"2026-06-24 {hr2:02d}:00:00"
+        
+    return start_time, end_time
 
 
 class LocalAgentConfig:
@@ -359,6 +406,50 @@ class Agent:
         chart_spec   = None
         thoughts     = ["Initializing local telemetry diagnostics..."]
         use_ising    = False  # True → Ising 35B specialist; False → Gemma 3 12B
+
+        # ── Timeframe Resolution ───────────────────────────────────────────────
+        start_time, end_time = resolve_timeframe(prompt_lower)
+        if start_time or end_time:
+            thoughts.append(f"Applying timeframe filters: {start_time or 'Start'} to {end_time or 'End'}")
+
+        # ── Troubleshooting RAG lookup ──────────────────────────────────────────
+        is_trouble_query = any(k in prompt_lower for k in ["troubleshoot", "fault", "status code", "error code", "remedy", "fix", "code"])
+        if is_trouble_query:
+            device_type = None
+            if any(k in prompt_lower for k in ["inverter", "inv", "string"]):
+                device_type = "inverter"
+            elif any(k in prompt_lower for k in ["battery", "bess", "bct", "cell"]):
+                device_type = "battery"
+            elif any(k in prompt_lower for k in ["weather", "wms", "sensor", "irradiance", "pyranometer"]):
+                device_type = "weather"
+                
+            codes = re.findall(r'\b\d+\b', prompt)
+            matched_manual = None
+            for code in codes:
+                devices_to_try = [device_type] if device_type else ["inverter", "battery", "weather"]
+                for dev in devices_to_try:
+                    res = ml_pipelines.lookup_hardware_manual(dev, code)
+                    if "error" not in res:
+                        matched_manual = (dev, code, res)
+                        break
+                if matched_manual:
+                    break
+                    
+            if matched_manual:
+                dev, code, info = matched_manual
+                thoughts.append(f"Matching troubleshooting guide for {dev} code {code}...")
+                resp_text = (
+                    f"### Troubleshooting Guidelines: {info['name']} ({dev.capitalize()} Code {code})\n\n"
+                    f"*   **Severity**: **{info['severity']}**\n"
+                    f"*   **Description**: {info['description']}\n\n"
+                    f"#### Recommended Resolution Steps:\n"
+                )
+                steps = info['resolution'].split('. ')
+                for s in steps:
+                    if s.strip():
+                        s_clean = re.sub(r'^\d+\.\s*', '', s.strip())
+                        resp_text += f"- {s_clean}\n"
+                return AgentResponse(resp_text, thoughts)
 
         # ── Direct SQL query — check FIRST to avoid asset hijacking ──────────────────
         if "sql" in prompt_lower and "weather" in prompt_lower:
@@ -736,8 +827,8 @@ class Agent:
                 "generation performance", " gap ", "loss attribution", "soiling rate",
                 "panel clean", "pr breakdown"]):
             thoughts.append("Running PR Gap & generation analysis...")
-            gen_res     = ml_pipelines.get_expected_vs_actual_generation()
-            soiling_res = ml_pipelines.calibrate_soiling_rate()
+            gen_res     = ml_pipelines.get_expected_vs_actual_generation(start_time=start_time, end_time=end_time)
+            soiling_res = ml_pipelines.calibrate_soiling_rate(start_time=start_time, end_time=end_time)
             ticket_desc = (
                 f"Jamnagar plant PR gap: {gen_res['gap_kwh']:,} kWh (PR={gen_res['pr_actual']}). "
                 f"Soiling accounts for {gen_res['attribution']['Soiling']:,} kWh at {soiling_res['avg_daily_soiling_rate_pct']}%/day. "
@@ -764,7 +855,7 @@ class Agent:
             thoughts.append("Running SCB String current Z-score analysis...")
             inv_id = ("JAMNAGAR_VIRTUAL_GATEWAY_B3INV1" if "b3inv1" in prompt_lower
                       else "JAMNAGAR_VIRTUAL_GATEWAY_B1INV1")
-            outlier_res = ml_pipelines.detect_scb_outliers(inv_id)
+            outlier_res = ml_pipelines.detect_scb_outliers(inv_id, start_time=start_time, end_time=end_time)
             ticket_payload = ""
             if "error" not in outlier_res and outlier_res.get("underperforming_strings"):
                 ticket_desc = (
@@ -781,7 +872,7 @@ class Agent:
         # 3. BESS / battery
         elif any(k in prompt_lower for k in ["bess", "battery", "state of health", "coulombic", "cycle count"]):
             thoughts.append("Running BESS State-of-Health & Coulombic Efficiency analysis...")
-            bess_res   = ml_pipelines.get_bess_health("JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1")
+            bess_res   = ml_pipelines.get_bess_health("JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", start_time=start_time, end_time=end_time)
             context_data = f"[Diagnostics: BESS={bess_res}]"
             chart_spec   = _chart_bess(bess_res)
 
@@ -789,7 +880,7 @@ class Agent:
         elif any(k in prompt_lower for k in ["efficiency", "dc-ac", "dc ac", "load factor",
                 "conversion", "inverter curve", "power curve"]):
             thoughts.append("Running Inverter DC-AC Efficiency Curve analysis (ML pipeline)...")
-            eff_res = ml_pipelines.analyze_inverter_efficiency()
+            eff_res = ml_pipelines.analyze_inverter_efficiency(start_time=start_time, end_time=end_time)
             ticket_payload = ""
             if eff_res.get("underperforming_inverters"):
                 ticket_desc = (
@@ -813,7 +904,7 @@ class Agent:
         elif any(k in prompt_lower for k in ["irradiance", "poa", "correlation", "clipping",
                 "r2", "r²", "scatter", "output ratio"]):
             thoughts.append("Running Irradiance–Power Correlation analysis...")
-            irr_res = ml_pipelines.analyze_irradiance_power_correlation()
+            irr_res = ml_pipelines.analyze_irradiance_power_correlation(start_time=start_time, end_time=end_time)
             context_data = (
                 f"[Diagnostics: R²={irr_res['correlation_r2']}, Clipping events={irr_res['clipping_events']}, "
                 f"Output ratio={irr_res['avg_output_ratio']}, Flag={irr_res['anomaly_flag']}, "
@@ -826,7 +917,7 @@ class Agent:
         elif any(k in prompt_lower for k in ["thermal", "hotspot", "temperature", "noct",
                 "heat", "temp delta", "module temp"]):
             thoughts.append("Running Module Thermal Anomaly Detection (NOCT model)...")
-            thermal_res = ml_pipelines.detect_thermal_anomalies()
+            thermal_res = ml_pipelines.detect_thermal_anomalies(start_time=start_time, end_time=end_time)
             ticket_payload = ""
             if thermal_res.get("anomaly_count", 0) > 0:
                 ticket_desc = (
@@ -851,7 +942,7 @@ class Agent:
         elif any(k in prompt_lower for k in ["curtailment", "availability", "curtail",
                 "grid fault", "downtime", "operating state", "fault trip", "fault hour"]):
             thoughts.append("Running Grid Curtailment & Plant Availability analysis...")
-            curt_res = ml_pipelines.analyze_grid_curtailment()
+            curt_res = ml_pipelines.analyze_grid_curtailment(start_time=start_time, end_time=end_time)
             ticket_payload = ""
             if curt_res.get("total_fault_hours", 0) > 2:
                 ticket_desc = (
@@ -873,6 +964,67 @@ class Agent:
             )
             chart_spec = _chart_curtailment(curt_res)
             use_ising  = True
+
+        # 8. Soiling ROI Calculator
+        elif any(k in prompt_lower for k in ["soiling roi", "cleaning roi", "tipping point", "when to clean", "module washing", "wash"]):
+            thoughts.append("Running Soiling Cleaning ROI analysis...")
+            roi_res = ml_pipelines.calibrate_cleaning_roi(start_time=start_time, end_time=end_time)
+            context_data = f"[Diagnostics: Soiling_ROI={roi_res}]"
+            chart_spec = {
+                "type": "bar",
+                "title": f"Module Cleaning ROI Analysis — Return {roi_res['roi_pct']}%",
+                "description": "Compares cumulative financial loss to module cleaning cost.",
+                "data": {
+                    "labels": ["Cleaning Cost", "Cumulative Dust Loss"],
+                    "datasets": [{
+                        "label": "Cost / Loss (Rs)",
+                        "data": [roi_res["cleaning_cost"], roi_res["cumulative_loss_inr"]],
+                        "backgroundColor": ["rgba(9,137,177,0.75)", "rgba(239,68,68,0.75)"],
+                        "borderRadius": 4
+                    }]
+                }
+            }
+
+        # 9. Day-Ahead Generation & BESS Forecasting
+        elif any(k in prompt_lower for k in ["forecast", "dispatch schedule", "bess schedule", "battery schedule", "day-ahead"]):
+            thoughts.append("Simulating 24-hour generation & BESS scheduling...")
+            fore_res = ml_pipelines.get_generation_and_bess_forecast(start_time=start_time, end_time=end_time)
+            context_data = f"[Diagnostics: Forecast_Schedule={fore_res[:12]}]"
+            chart_spec = {
+                "type": "line",
+                "title": "24-Hour BESS Charge/Discharge & SOC Forecast",
+                "description": "Plots forecasted generation, recommended BESS charging, discharging, and SOC.",
+                "data": {
+                    "labels": [item["hour"] for item in fore_res],
+                    "datasets": [
+                        {
+                            "label": "Gen Forecast (kW)",
+                            "data": [item["predicted_generation_kw"] for item in fore_res],
+                            "borderColor": "#8ab833",
+                            "fill": False
+                        },
+                        {
+                            "label": "BESS Dispatch (kW)",
+                            "data": [item["bess_charge_discharge_kw"] for item in fore_res],
+                            "borderColor": "#0989b1",
+                            "fill": False
+                        },
+                        {
+                            "label": "BESS SOC (%)",
+                            "data": [item["bess_soc_pct"] for item in fore_res],
+                            "borderColor": "#f59e0b",
+                            "fill": False,
+                            "yAxisID": "y1"
+                        }
+                    ]
+                },
+                "options": {
+                    "scales": {
+                        "y": {"title": {"display": True, "text": "Power (kW)"}},
+                        "y1": {"position": "right", "title": {"display": True, "text": "SOC (%)"}, "min": 0, "max": 100, "grid": {"drawOnChartArea": False}}
+                    }
+                }
+            }
 
         # ── Build LLM message ──────────────────────────────────────────────────
         system_instruction = (

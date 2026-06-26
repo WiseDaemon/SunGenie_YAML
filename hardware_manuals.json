@@ -1,0 +1,38 @@
+{
+  "inverter": {
+    "2": {
+      "name": "Curtailment (Grid Wait)",
+      "severity": "Info",
+      "description": "Inverter is throttled or waiting for grid dispatch control signals.",
+      "resolution": "No action required. System is waiting for Power Quality or Grid operator commands to resume full feed-in."
+    },
+    "3": {
+      "name": "Over-Temperature Fault",
+      "severity": "Warning",
+      "description": "Inverter internal heat sink temperature has exceeded safe operating limits.",
+      "resolution": "1. Inspect internal/external fans for dust blockage. 2. Clean the air intake filters. 3. Check for adequate ventilation clearances around the enclosure."
+    },
+    "4": {
+      "name": "String Current Imbalance",
+      "severity": "Warning",
+      "description": "Difference in string current input across SCBs exceeds 15% deviation limits.",
+      "resolution": "1. Check SCB string current fuses. 2. Inspect module strings for local shading or heavy dust build-up. 3. Verify DC input connector isolation resistances."
+    }
+  },
+  "battery": {
+    "501": {
+      "name": "Cell Voltage Imbalance",
+      "severity": "Warning",
+      "description": "The difference between individual cell voltages in a rack exceeds the maximum allowable threshold.",
+      "resolution": "1. Trigger and run a manual cell equalization cycle via the battery management system (BMS). 2. Check connections and torque on cell link bars. 3. Replace cell module if delta persists after equalization."
+    }
+  },
+  "weather": {
+    "101": {
+      "name": "Irradiance Sensor Desynchronization",
+      "severity": "Warning",
+      "description": "Plane of Array (POA) sensor output differs from adjacent sensor by >50 W/m².",
+      "resolution": "1. Clean the pyranometer glass window. 2. Verify pyranometer levelling and alignment angles. 3. Recalibrate sensor offset values."
+    }
+  }
+}
