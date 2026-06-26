@@ -17,8 +17,10 @@ This document details the diagnostic steps, structural routing fixes, model prio
   - Replaced the broad `"what"`/`"which"` keyword matching with a more precise `is_list_request` check to distinguish inventory listings from analytical queries.
 
 ### 3. Model Precedence & Performance
-- **Problem**: The backend defaulted to Nvidia API endpoints, which timed out (taking 45 seconds per call) before falling back to Google Gemini.
-- **Fix**: Promoted Google Gemini (specifically the requested **Gemma 4 26B** model: `gemma-4-26b-a4b-it`) to the primary calling slot, keeping Nvidia models as fallback options. This reduced prompt response latency to under a second.
+- **Problem**: The backend defaulted to Nvidia API endpoints, which timed out (taking 45 seconds per call) before falling back to Google Gemini. Additionally, the tertiary fallback model was Meta Llama 3.1 8B, which did not align with the preference to keep the Gemma model family as standard.
+- **Fix**:
+  - Promoted Google Gemini (specifically the requested **Gemma 4 26B** model: `gemma-4-26b-a4b-it`) to the primary calling slot, keeping Nvidia models as fallback options. This reduced prompt response latency to under a second.
+  - Replaced the tertiary fallback model with **Google Gemma 3 12B** (`google/gemma-3-12b-it` on Nvidia integrate API) to keep Gemma as the standard fallback engine.
 
 ### 4. GitHub Publication
 - **Repository**: [SunGenie_YAML](https://github.com/WiseDaemon/SunGenie_YAML)
