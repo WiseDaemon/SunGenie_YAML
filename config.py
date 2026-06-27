@@ -2,8 +2,14 @@ import os
 from dotenv import load_dotenv
 
 # Load environment variables.
-# Override the .env location with SUNGENIE_ENV_PATH if needed; defaults to C:\LLM\.env.
-load_dotenv(dotenv_path=os.environ.get("SUNGENIE_ENV_PATH", r"C:\LLM\.env"))
+env_path = os.environ.get("SUNGENIE_ENV_PATH")
+if not env_path:
+    windows_path = r"C:\LLM\.env"
+    if os.path.exists(windows_path):
+        env_path = windows_path
+    else:
+        env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+load_dotenv(dotenv_path=env_path)
 
 # --- Database Configuration -------------------------------------------------
 # BLOCK-02: default to the database that ships next to the code, so the project
