@@ -381,6 +381,7 @@
                 <input type="date" id="start-date" onchange="onCustomDateChange()" style="background: rgba(20, 28, 47, 0.7); border: 1px solid var(--card-border); color: var(--text-primary); padding: 0.3rem 0.5rem; border-radius: 6px; font-size: 0.7rem;">
                 <input type="date" id="end-date" onchange="onCustomDateChange()" style="background: rgba(20, 28, 47, 0.7); border: 1px solid var(--card-border); color: var(--text-primary); padding: 0.3rem 0.5rem; border-radius: 6px; font-size: 0.7rem;">
             </div>
+            <div id="window-indicator" class="status-badge" style="font-size: 0.68rem;">Window: All data</div>
             <div class="status-badge" style="background: rgba(9,137,177,0.15); border-color: rgba(9,137,177,0.4); color: var(--accent-cyan);">WMS: Active</div>
             <div class="status-badge">Plant Online</div>
         </div>
@@ -630,6 +631,8 @@
         let customStart = '';
         let customEnd = '';
         let displayedAlerts = new Set();
+        let dataRange = null;        // {min_timestamp, max_timestamp, latest_date, record_count} from /api/data_range
+        let backendOnline = null;    // true once /api/data_range responds; false if unreachable (static/offline)
 
         function onTimeframeChange() {
             const select = document.getElementById('timeframe-select');
@@ -651,19 +654,29 @@
             }
         }
 
+        function fmtAddDays(dateStr, delta) {
+            const d = new Date(dateStr + 'T00:00:00');
+            d.setDate(d.getDate() + delta);
+            return d.toISOString().slice(0, 10);
+        }
+
         function getTimeframeParams() {
             let start = '';
             let end = '';
-            const today = "2026-06-24";
+            // Anchor relative presets to the REAL latest data date when known, so
+            // selections aren't frozen to a hardcoded month and map to actual data.
+            const latest = (dataRange && dataRange.latest_date) ? dataRange.latest_date : "2026-06-24";
             if (activeTimeframe === 'today') {
-                start = `${today} 00:00:00`;
-                end = `${today} 23:59:59`;
+                start = `${latest} 00:00:00`;
+                end = `${latest} 23:59:59`;
             } else if (activeTimeframe === 'yesterday') {
-                start = `2026-06-23 00:00:00`;
-                end = `2026-06-23 23:59:59`;
+                const y = fmtAddDays(latest, -1);
+                start = `${y} 00:00:00`;
+                end = `${y} 23:59:59`;
             } else if (activeTimeframe === 'week') {
-                start = `2026-06-18 00:00:00`;
-                end = `${today} 23:59:59`;
+                const s = fmtAddDays(latest, -6);
+                start = `${s} 00:00:00`;
+                end = `${latest} 23:59:59`;
             } else if (activeTimeframe === 'custom') {
                 if (customStart && customEnd) {
                     start = `${customStart} 00:00:00`;
@@ -741,12 +754,134 @@
             }
         }
 
+        // Number of days covered by the selected window ('live' ≈ full dataset span).
+        function windowDays(start, end) {
+            if (!start || !end) {
+                if (dataRange && dataRange.earliest_date && dataRange.latest_date) {
+                    return Math.max(1, Math.round(
+                        (new Date(dataRange.latest_date) - new Date(dataRange.earliest_date)) / 86400000) + 1);
+                }
+                return 31;
+            }
+            const s = new Date(start.replace(' ', 'T'));
+            const e = new Date(end.replace(' ', 'T'));
+            return Math.max(1, Math.round((e - s) / 86400000) + 1);
+        }
+
+        // Deterministic per-window jitter so each selection yields distinct-but-stable demo numbers.
+        function windowJitter(start, end) {
+            const str = (start || 'live') + '|' + (end || '');
+            let h = 0;
+            for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+            return 1 + (((h % 1000) / 1000) - 0.5) * 0.06; // ±3%
+        }
+
+        // Window-varying demo data used when the backend is unreachable (static hosting / offline),
+        // so date selection visibly changes the dashboard even with no API. Shapes match the API.
+        function demoData(start, end) {
+            const days = windowDays(start, end);
+            const j = windowJitter(start, end);
+            const expected = Math.round(8140 * days * j);
+            const actual = Math.round(5628 * days * j);
+            const gap = Math.max(0, expected - actual);
+            const latest = (dataRange && dataRange.latest_date) ? dataRange.latest_date : "2026-06-24";
+            return {
+                prGap: {
+                    actual_kwh: actual, expected_kwh: expected, gap_kwh: gap,
+                    pr_actual: +(actual / expected).toFixed(4),
+                    attribution: {
+                        "Soiling": Math.round(gap * 0.45), "Shading": Math.round(gap * 0.05),
+                        "Hardware Inefficiency": Math.round(gap * 0.25), "Grid Curtailment": Math.round(gap * 0.25)
+                    }
+                },
+                bess: { state_of_health_pct: +(99.4 * (2 - j)).toFixed(1), total_cycles: Math.max(1, Math.round(12 * days / 31)),
+                        coulombic_efficiency: 0.98, bess_id: 'JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1', status: 'Healthy' },
+                soiling: { avg_daily_soiling_rate_pct: +(-0.22 * j).toFixed(2),
+                           inferred_cleaning_dates: days > 7 ? ["2026-06-12", "2026-06-25"] : ["2026-06-25"] },
+                scb: { underperforming_strings: {}, normal_strings_count: 16, mean_current: +(8.5 * j).toFixed(2), std_dev: 0.4 },
+                eff: { fleet_avg_efficiency_pct: +(95.6 * (2 - j)).toFixed(1), underperforming_inverters: [],
+                    fleet_curve: [
+                        {"load_bin": "0-10%", "avg_efficiency_pct": 87.2}, {"load_bin": "10-20%", "avg_efficiency_pct": 91.5},
+                        {"load_bin": "20-30%", "avg_efficiency_pct": 94.1}, {"load_bin": "30-40%", "avg_efficiency_pct": 95.3},
+                        {"load_bin": "40-50%", "avg_efficiency_pct": 95.8}, {"load_bin": "50-60%", "avg_efficiency_pct": 96.1},
+                        {"load_bin": "60-70%", "avg_efficiency_pct": 96.2}, {"load_bin": "70-80%", "avg_efficiency_pct": 96.2},
+                        {"load_bin": "80-90%", "avg_efficiency_pct": 96.0}, {"load_bin": "90-100%", "avg_efficiency_pct": 95.8}
+                    ] },
+                irr: { correlation_r2: +(0.912 * (2 - j)).toFixed(3), anomaly_flag: 'Normal',
+                    scatter_data: [
+                        {"poa": 100, "actual_kw": 800, "expected_kw": 850, "clipping": false},
+                        {"poa": 300, "actual_kw": 2500, "expected_kw": 2550, "clipping": false},
+                        {"poa": 500, "actual_kw": 4150, "expected_kw": 4250, "clipping": false},
+                        {"poa": 700, "actual_kw": 5850, "expected_kw": 5950, "clipping": false},
+                        {"poa": 900, "actual_kw": 7350, "expected_kw": 7650, "clipping": true},
+                        {"poa": 1000, "actual_kw": 7400, "expected_kw": 8500, "clipping": true}
+                    ] },
+                thermal: { anomaly_count: Math.round(2 * days / 31), max_delta_c: +(5.2 * j).toFixed(1), status: 'Normal',
+                    daily_thermal_profile: [
+                        {"date": fmtAddDays(latest, -4), "avg_delta_c": 4.1}, {"date": fmtAddDays(latest, -3), "avg_delta_c": 4.3},
+                        {"date": fmtAddDays(latest, -2), "avg_delta_c": 4.5}, {"date": fmtAddDays(latest, -1), "avg_delta_c": 4.8},
+                        {"date": latest, "avg_delta_c": 5.2}
+                    ] },
+                curt: { plant_availability_pct: +(99.93 * (2 - j)).toFixed(2), total_curtailment_hours: +(4.5 * days / 31).toFixed(1),
+                    total_fault_hours: 0.0,
+                    category_breakdown_hours: {"Running": +(120.5 * days / 31).toFixed(1), "Grid Curtailment": +(4.5 * days / 31).toFixed(1),
+                        "Fault/Trip": 0.0, "Nighttime": +(108.0 * days / 31).toFixed(1), "Standby": +(7.0 * days / 31).toFixed(1), "Scheduled Maintenance": 0.0},
+                    estimated_curtailed_kwh: Math.round(38916 * days / 31) },
+                alerts: [{timestamp: `${latest} 11:20:00`, asset_id: "JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", severity: "Warning", message: "BESS Cell voltage imbalance warning", status: "Active"}],
+                roi: { last_cleaning_date: "2026-06-12", days_since_last_cleaning: days, cumulative_loss_kwh: Math.round(100 * days),
+                    cumulative_loss_inr: Math.round(450 * days), daily_loss_kwh: 100.0, daily_loss_inr: 450.0,
+                    tipping_point_days: 22, days_remaining: Math.max(0, 22 - days), cleaning_recommended: days >= 22,
+                    optimal_cleaning_date: fmtAddDays("2026-06-12", 22), roi_pct: days >= 22 ? +((days - 22) * 3).toFixed(1) : 0.0, cleaning_cost: 15000.0 },
+                forecast: [
+                    {hour: "08:00", predicted_generation_kw: 150, bess_charge_discharge_kw: 0, bess_soc_pct: 20},
+                    {hour: "10:00", predicted_generation_kw: 1200, bess_charge_discharge_kw: 500, bess_soc_pct: 25},
+                    {hour: "12:00", predicted_generation_kw: 4500, bess_charge_discharge_kw: 2000, bess_soc_pct: 45},
+                    {hour: "14:00", predicted_generation_kw: 5200, bess_charge_discharge_kw: 2000, bess_soc_pct: 65},
+                    {hour: "16:00", predicted_generation_kw: 2100, bess_charge_discharge_kw: 0, bess_soc_pct: 65},
+                    {hour: "18:00", predicted_generation_kw: 100, bess_charge_discharge_kw: -1000, bess_soc_pct: 55},
+                    {hour: "20:00", predicted_generation_kw: 0, bess_charge_discharge_kw: -2000, bess_soc_pct: 35},
+                    {hour: "22:00", predicted_generation_kw: 0, bess_charge_discharge_kw: -1500, bess_soc_pct: 20}
+                ]
+            };
+        }
+
+        // Probe the backend and cache the real data window. Sets backendOnline.
+        async function refreshDataRange() {
+            try {
+                const r = await fetch('/api/data_range', { headers: apiHeaders() });
+                if (r.ok) {
+                    const j = await r.json();
+                    if (j && !j.error) { dataRange = j; backendOnline = true; return; }
+                }
+                backendOnline = false;
+            } catch (e) {
+                backendOnline = false;
+            }
+        }
+
+        // Header badge: shows the active window and whether data is live or demo.
+        function updateWindowIndicator(start, end) {
+            const el = document.getElementById('window-indicator');
+            if (!el) return;
+            const rangeTxt = (start && end) ? `${start.slice(0, 10)} → ${end.slice(0, 10)}` : 'All data';
+            if (backendOnline) {
+                const recs = (dataRange && dataRange.record_count) ? ` · ${dataRange.record_count.toLocaleString()} rec` : '';
+                el.textContent = `Window: ${rangeTxt} · Live${recs}`;
+                el.style.color = 'var(--accent-green, #8ab833)';
+            } else {
+                el.textContent = `Window: ${rangeTxt} · Demo data (API offline)`;
+                el.style.color = '#f59e0b';
+            }
+        }
+
         async function fetchAll() {
             const { start, end } = getTimeframeParams();
             const queryParams = (start && end) ? `?start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}` : '';
-            
+            await refreshDataRange();
+            updateWindowIndicator(start, end);
+
             try {
-                const [prData, bessData, soilingData, scbData, effData, irrData, thermalData, curtData, alertsData, roiData, forecastData] = await Promise.all([
+                let [prData, bessData, soilingData, scbData, effData, irrData, thermalData, curtData, alertsData, roiData, forecastData] = await Promise.all([
                     fetchSafe(`/api/pr_gap${queryParams}`, {
                         actual_kwh: 5628,
                         expected_kwh: 8140,
@@ -851,6 +986,15 @@
                         {hour: "22:00", predicted_generation_kw: 0, bess_charge_discharge_kw: -1500, bess_soc_pct: 20}
                     ])
                 ]);
+
+                // If the backend is unreachable, swap in window-varying demo data so the
+                // dashboard still responds to date selection (static / offline hosting).
+                if (!backendOnline) {
+                    const D = demoData(start, end);
+                    prData = D.prGap; bessData = D.bess; soilingData = D.soiling;
+                    scbData = D.scb; effData = D.eff; irrData = D.irr; thermalData = D.thermal;
+                    curtData = D.curt; alertsData = D.alerts; roiData = D.roi; forecastData = D.forecast;
+                }
 
                 // --- KPI Row 1 ---
                 try {
@@ -1253,11 +1397,18 @@
                 }
 
                 // Inject HTML
+                const msgId = 'msg-' + Date.now();
                 loadingMsg.outerHTML = `
-                    <div class="message agent" style="max-width:95%;">
+                    <div class="message agent" style="max-width:95%;" id="${msgId}" data-prompt="${prompt.replace(/"/g, '&quot;')}" data-response="${content.replace(/"/g, '&quot;')}">
                         ${thoughtsHtml}
                         <div class="markdown-content">${content}</div>
                         ${chartHtml}
+                        <div class="feedback-widget" style="margin-top:10px; padding-top:5px; border-top:1px solid var(--border-color); display:flex; gap:10px; font-size:12px; align-items:center;">
+                            <span style="color:var(--text-secondary);">Helpful?</span>
+                            <button onclick="submitFeedback('${msgId}', 1)" style="background:none; border:none; cursor:pointer; font-size:16px;" title="Yes">👍</button>
+                            <button onclick="submitFeedback('${msgId}', -1)" style="background:none; border:none; cursor:pointer; font-size:16px;" title="No">👎</button>
+                            <div id="fb-status-${msgId}" style="display:none; color:var(--success-color); margin-left:10px;">Thanks for the feedback!</div>
+                        </div>
                     </div>`;
 
                 // Render Chart.js after DOM is ready using setTimeout
@@ -1866,6 +2017,29 @@
                 };
             }
             return { response: responseText, thoughts, chart };
+        }
+
+        async function submitFeedback(msgId, rating) {
+            const msgDiv = document.getElementById(msgId);
+            if (!msgDiv) return;
+            const prompt = msgDiv.getAttribute('data-prompt') || '';
+            const response = msgDiv.getAttribute('data-response') || '';
+            const label = prompt.toLowerCase().includes('sql') ? 'SQL Generation' : 'General';
+            
+            try {
+                const res = await fetch('/api/feedback', {
+                    method: 'POST',
+                    headers: apiHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ prompt, response, rating, label })
+                });
+                if (res.ok) {
+                    const status = document.getElementById('fb-status-' + msgId);
+                    status.style.display = 'inline';
+                    status.innerText = 'Thanks for the feedback!';
+                }
+            } catch (err) {
+                console.error("Feedback failed", err);
+            }
         }
 
         fetchAll();

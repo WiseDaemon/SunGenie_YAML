@@ -1,0 +1,23 @@
+services:
+  sungenie:
+    build: .
+    container_name: sungenie-eanalytix
+    ports:
+      - "8080:8080"
+    # Secrets (GEMINI_API_KEY, NVIDIA_*_KEY, SUNGENIE_API_KEY) come from .env.
+    # Copy .env.example to .env and fill it in before `docker compose up`.
+    env_file:
+      - .env
+    environment:
+      # Telemetry DB is mounted read-only below; events DB lives on a writable
+      # volume so captured labels persist across container restarts/rebuilds.
+      - SUNGENIE_DB_PATH=/app/sungenie_telemetry.db
+      - SUNGENIE_EVENTS_DB_PATH=/app/events_data/sungenie_events.db
+    volumes:
+      # Mount the telemetry database (read-only) — keeps the 95MB file out of the image.
+      - ./sungenie_telemetry.db:/app/sungenie_telemetry.db:ro
+      # Persist captured ground-truth events outside the container.
+      - ./events_data:/app/events_data
+      # Persist generated reports.
+      - ./reports:/app/reports
+    restart: unless-stopped

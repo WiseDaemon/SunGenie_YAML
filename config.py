@@ -22,6 +22,13 @@ DB_PATH = os.environ.get(
 # Directory holding the raw event_history_report_*.csv files (used by compile_db.py).
 DATA_DIR = os.environ.get("SUNGENIE_DATA_DIR", r"C:\LLM\SunGenie data")
 
+# Separate DB for captured ground-truth events (cleanings, faults, capacity tests).
+# Kept apart from the telemetry DB so re-running compile_db.py never wipes labels.
+EVENTS_DB_PATH = os.environ.get(
+    "SUNGENIE_EVENTS_DB_PATH",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "sungenie_events.db"),
+)
+
 # --- API Keys (read from environment / .env — never hardcode) ---------------
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 NVIDIA_ISING_KEY = os.environ.get("NVIDIA_ISING_KEY")

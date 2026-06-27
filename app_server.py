@@ -6,6 +6,7 @@ import asyncio
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
+from typing import Optional
 import uvicorn
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -16,6 +17,7 @@ sys.path.append(os.path.dirname(__file__))
 import ml_pipelines
 import agent_setup
 import config
+import events_store
 from google_antigravity_shim import Agent
 
 # --- Rate limiting (SEC-03) -------------------------------------------------
@@ -47,6 +49,56 @@ async def api_key_guard(request: Request, call_next):
 
 class ChatRequest(BaseModel):
     prompt: str
+
+
+class EventRequest(BaseModel):
+    event_type: str
+    asset_id: Optional[str] = None
+    event_timestamp: Optional[str] = None
+    value: Optional[float] = None
+    notes: Optional[str] = None
+
+
+class FeedbackRequest(BaseModel):
+    prompt: str
+    response: str
+    rating: int
+    label: Optional[str] = None
+
+
+@app.post("/api/feedback")
+@limiter.limit("60/minute")
+def api_log_feedback(request: Request, payload: FeedbackRequest):
+    try:
+        rec = events_store.log_feedback(
+            payload.prompt, payload.response, payload.rating, payload.label
+        )
+        return JSONResponse(content={"status": "logged", "feedback": rec})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.post("/api/events")
+@limiter.limit("60/minute")
+def api_log_event(request: Request, payload: EventRequest):
+    try:
+        rec = events_store.log_event(
+            payload.event_type, payload.asset_id, payload.event_timestamp,
+            payload.value, payload.notes, source="dashboard",
+        )
+        return JSONResponse(content={"status": "logged", "event": rec})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/events")
+@limiter.limit("60/minute")
+def api_list_events(request: Request, event_type: str = None, asset_id: str = None, start_time: str = None, end_time: str = None):
+    try:
+        rows = events_store.list_events(event_type=event_type, asset_id=asset_id, start=start_time, end=end_time)
+        return JSONResponse(content=rows)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 
 @app.get("/api/pr_gap")
@@ -154,6 +206,16 @@ def api_soiling_roi(request: Request, start_time: str = None, end_time: str = No
 def api_forecast(request: Request, start_time: str = None, end_time: str = None):
     try:
         res = ml_pipelines.get_generation_and_bess_forecast(start_time=start_time, end_time=end_time)
+        return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.get("/api/data_range")
+@limiter.limit("60/minute")
+def api_data_range(request: Request):
+    try:
+        res = ml_pipelines.get_data_range()
         return JSONResponse(content=res)
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})

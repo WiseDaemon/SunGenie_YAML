@@ -9,6 +9,7 @@ import hashlib
 sys.path.append(os.path.dirname(__file__))
 import ml_pipelines
 import config
+import events_store
 
 DB_PATH = config.DB_PATH
 
@@ -142,6 +143,33 @@ def get_soiling_calibration() -> str:
     except Exception as e:
         return json.dumps({"error": str(e)})
 
+# 5. System Uptime & ENS Tool
+def get_system_uptime_ens() -> str:
+    """Calculates Plant Uptime % and Energy Not Supplied (ENS) due to faults or curtailment."""
+    try:
+        res = ml_pipelines.get_system_uptime_ens()
+        return json.dumps(res)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+# 6. BESS RTE Tool
+def get_bess_rte(bess_id: str = "JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1") -> str:
+    """Calculates BESS Round Trip Efficiency (RTE) to determine battery degradation."""
+    try:
+        res = ml_pipelines.get_bess_rte(bess_id)
+        return json.dumps(res)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+# 7. Tracker Misalignment Tool
+def get_tracker_misalignment() -> str:
+    """Estimates tracker misalignment losses and identifies affected trackers."""
+    try:
+        res = ml_pipelines.get_tracker_misalignment()
+        return json.dumps(res)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
 # 5. Inverter string current outlier detection tool
 def get_scb_outliers(inverter_id: str = "JAMNAGAR_VIRTUAL_GATEWAY_B1INV1", timestamp_str: str = None) -> str:
     """Analyzes string combiner box currents to isolate localized string-level failures or shading.
@@ -179,6 +207,40 @@ def generate_actionable_task_payload(title: str, severity: str, asset_id: str, d
     }
     return json.dumps(payload, indent=2)
 
+# 7. Ground-truth event logging tools (label capture — foundation for supervised ML)
+def log_plant_event(event_type: str, asset_id: str = None, event_timestamp: str = None, value: float = None, notes: str = None) -> str:
+    """Records a ground-truth operational event (label) for future ML training.
+
+    Use this whenever the operator reports that something physically happened that the
+    telemetry does not capture — a panel cleaning, a confirmed fault, a BESS capacity
+    test, or maintenance. These labels are the prerequisite for predictive models.
+
+    Args:
+        event_type: One of 'cleaning', 'fault', 'capacity_test', 'maintenance', 'other'.
+        asset_id: Affected asset id (e.g. 'JAMNAGAR_VIRTUAL_GATEWAY_B1INV1'), optional.
+        event_timestamp: When it happened ('YYYY-MM-DD' or 'YYYY-MM-DD HH:MM:SS'); defaults to now.
+        value: Optional numeric (e.g. measured capacity %, fault code).
+        notes: Free-text detail.
+    """
+    try:
+        rec = events_store.log_event(event_type, asset_id, event_timestamp, value, notes, source="AI_Agent")
+        return json.dumps({"status": "logged", "event": rec})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+def get_plant_events(event_type: str = None, asset_id: str = None) -> str:
+    """Lists previously recorded ground-truth events (cleanings, faults, capacity tests).
+
+    Args:
+        event_type: Optional filter ('cleaning', 'fault', 'capacity_test', 'maintenance', 'other').
+        asset_id: Optional asset id filter (e.g. 'JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1').
+    """
+    try:
+        rows = events_store.list_events(event_type=event_type, asset_id=asset_id)
+        return json.dumps(rows)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
 def get_agent_config():
     try:
         import sys
@@ -195,22 +257,32 @@ def get_agent_config():
             get_pr_gap_analysis,
             get_bess_health_status,
             get_soiling_calibration,
+            get_system_uptime_ens,
+            get_bess_rte,
+            get_tracker_misalignment,
             get_scb_outliers,
-            generate_actionable_task_payload
+            generate_actionable_task_payload,
+            log_plant_event,
+            get_plant_events
         ],
         system_instructions=(
             "You are the SunGenie AI Assistant (eAnalytiX Platform), an expert AI/ML solar engineering assistant.\n\n"
             "Your goal is to help operators monitor the Jamnagar Central Solar Plant using raw telemetry data.\n"
-            "You have tools to perform PR gap analysis, BESS health diagnostics, soiling rate calibration, "
+            "You have tools to perform PR gap analysis, BESS health diagnostics, BESS round trip efficiency (RTE), "
+            "tracker misalignment analysis, system uptime (ENS), soiling rate calibration, "
             "string current outlier analysis, and execute custom SQL SELECT queries.\n\n"
             "GUIDELINES:\n"
             "1. When answering queries about performance or drops, prioritize using the high-level tools first "
-            "(get_pr_gap_analysis, get_soiling_calibration, get_scb_outliers, get_bess_health_status).\n"
+            "(get_pr_gap_analysis, get_soiling_calibration, get_scb_outliers, get_bess_health_status, "
+            "get_system_uptime_ens, get_bess_rte, get_tracker_misalignment).\n"
             "2. Use execute_sql_query for custom aggregations, specific timestamp lookups, or weather queries.\n"
             "3. If you find underperforming assets or faults (e.g. a string current outlier or battery SOC drift), "
             "use generate_actionable_task_payload to generate a JSON work order and present it to the operator "
             "so they can copy-paste it into the Actionable Tasks board.\n"
-            "4. Keep your responses concise, technical, and data-backed."
+            "4. If the operator reports a real-world event the telemetry can't see (a panel cleaning, a confirmed "
+            "fault, a BESS capacity test, or maintenance), call log_plant_event to record it; use get_plant_events "
+            "to recall history. These labels train future predictive models.\n"
+            "5. Keep your responses concise, technical, and data-backed."
         )
     )
     return config

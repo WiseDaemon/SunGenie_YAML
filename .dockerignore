@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.git/
+.github/
+.gitignore
+reports/
+.env
+*.md
+tests/
+# Large data files are mounted at runtime, not baked into the image:
+*.db

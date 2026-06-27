@@ -15,6 +15,16 @@ import agent_setup
 
 MODEL_NAME = "gemma-4-26b-a4b-it"
 
+# Compact schema used to ground text-to-SQL generation (ARC-03 fallback).
+TELEMETRY_COLUMNS = (
+    "timestamp, type, meterId, deviceUID, device_group, activePower, energyToday, "
+    "energyTillDate, inputPVPower, outputPower, inputCurrent, inputVoltage, inverterStatus, "
+    "bessSOC, bessCurrent, voltageRPhase, currentRPhase, totalActiveEnergyImport, "
+    "totalActiveEnergyExport, netActiveEnergy, windSpeed, ambientTemperature, humidity, "
+    "globalHorizontalIrradiance, planeOfArraySensor01, moduleTemperatureSensor01, "
+    "moduleTemperatureSensor03, rainfall, scb_currents"
+)
+
 # Nvidia API credentials
 ISING_KEY  = config.NVIDIA_ISING_KEY
 LLAMA_KEY  = config.NVIDIA_LLAMA_KEY
@@ -450,17 +460,68 @@ class Agent:
                         resp_text += f"- {s_clean}\n"
                 return AgentResponse(resp_text, thoughts)
 
-        # ── Direct SQL query — check FIRST to avoid asset hijacking ──────────────────
-        if "sql" in prompt_lower and "weather" in prompt_lower:
-            thoughts.append("Executing SQL query for weather telemetry...")
-            default_query = "SELECT timestamp, ambientTemperature, planeOfArraySensor01 FROM telemetry WHERE device_group='WEATHER' ORDER BY timestamp DESC LIMIT 5"
-            res_str = agent_setup.execute_sql_query(default_query)
-            return AgentResponse(f"**SQL Query Results (Weather Data):**\n```json\n{res_str}\n```", thoughts)
+        # ── Text-to-SQL Generation (LLM-driven dynamic querying) ───────────────
+        db_keywords = ["sql query", "database query", "select from", "sql"]
+        # Only trigger SQL if explicitly asking for SQL, database, or if the intent specifically uses SQL keywords.
+        is_sql_intent = any(k in prompt_lower for k in db_keywords) and not is_trouble_query
 
-        elif "select" in prompt_lower and "from" in prompt_lower:
-            thoughts.append("Executing SQL query locally on SQLite database...")
-            res_str = agent_setup.execute_sql_query(prompt)
-            return AgentResponse(f"**SQL Query Results:**\n```json\n{res_str}\n```", thoughts)
+        if is_sql_intent:
+            thoughts.append("Intent matches database query. Generating SQL...")
+            
+            schema_info = """
+            Available Columns in the 'telemetry' table:
+            - timestamp (TEXT, format 'YYYY-MM-DD HH:MM:SS')
+            - type (TEXT, e.g. 'electricity_metering_data')
+            - meterId (TEXT, e.g. 'JAMNAGAR_VIRTUAL_GATEWAY_B1INV1', 'B1BCT1', 'B1MFM1')
+            - deviceUID (TEXT)
+            - device_group (TEXT, e.g. 'WEATHER', 'INVERTER', 'METER', 'BESS', 'PCS', 'PQM', 'DCCON')
+            - activePower (REAL)
+            - energyToday (REAL)
+            - energyTillDate (REAL)
+            - apparentEnergyTillDate (REAL)
+            - apparentEnergyToday (REAL)
+            - inputPVPower (REAL)
+            - inputCurrent (REAL)
+            - inputVoltage (REAL)
+            - inverterStatus (INTEGER)
+            - bessSOC (REAL)
+            - bessCurrent (REAL)
+            - voltageRPhase (REAL)
+            - currentRPhase (REAL)
+            - totalActiveEnergyImport (REAL)
+            - totalActiveEnergyExport (REAL)
+            - netActiveEnergy (REAL)
+            - windSpeed (REAL)
+            - windDirection (REAL)
+            """
+            
+            sql_gen_prompt = f"""You are an expert SQL generator for SQLite.
+Based on the following schema for the 'telemetry' table:
+{schema_info}
+
+The user asks: "{prompt}"
+
+Generate ONLY a valid SQLite SELECT query to answer this question. Do not explain, do not output markdown formatting blocks, just output the raw SQL string. The query must start with SELECT. Limit the results to 50 if applicable.
+"""
+            
+            try:
+                sql_model = genai.GenerativeModel("gemini-2.5-pro")
+                sql_response = await sql_model.generate_content_async(sql_gen_prompt)
+                generated_sql = sql_response.text.strip().replace("```sql", "").replace("```", "").strip()
+                
+                if not generated_sql.upper().startswith("SELECT"):
+                    thoughts.append("Safety check failed: LLM generated non-SELECT query.")
+                    generated_sql = "SELECT 'Safety Error: Only SELECT queries are permitted' as error;"
+                else:
+                    thoughts.append(f"Executing generated SQL: {generated_sql}")
+                
+                res_str = agent_setup.execute_sql_query(generated_sql)
+                
+                thoughts.append("SQL execution complete. Formatting response...")
+                resp_text = f"**Generated SQL Query:**\n```sql\n{generated_sql}\n```\n\n**Results:**\n```json\n{res_str}\n```"
+                return AgentResponse(resp_text, thoughts)
+            except Exception as e:
+                thoughts.append(f"SQL generation/execution failed: {str(e)}")
 
         # ── Dynamic Asset extractor & resolver ─────────────────────────────────
         db_assets = [
@@ -854,6 +915,24 @@ class Agent:
             bess_res   = ml_pipelines.get_bess_health("JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", start_time=start_time, end_time=end_time)
             context_data = f"[Diagnostics: BESS={bess_res}]"
             chart_spec   = _chart_bess(bess_res)
+            
+        elif any(k in prompt_lower for k in ["rte", "round trip efficiency"]):
+            thoughts.append("Running BESS Round Trip Efficiency (RTE) calculation...")
+            rte_res = ml_pipelines.get_bess_rte("JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", start_time=start_time, end_time=end_time)
+            context_data = f"[Diagnostics: BESS_RTE={rte_res}]"
+            chart_spec = None
+            
+        elif any(k in prompt_lower for k in ["uptime", "ens", "energy not supplied"]):
+            thoughts.append("Running System Uptime and ENS calculation...")
+            uptime_res = ml_pipelines.get_system_uptime_ens(start_time=start_time, end_time=end_time)
+            context_data = f"[Diagnostics: SYSTEM_UPTIME={uptime_res}]"
+            chart_spec = None
+            
+        elif any(k in prompt_lower for k in ["tracker", "misalignment"]):
+            thoughts.append("Running Tracker Misalignment Deviation detection...")
+            tracker_res = ml_pipelines.get_tracker_misalignment(start_time=start_time, end_time=end_time)
+            context_data = f"[Diagnostics: TRACKER_MISALIGNMENT={tracker_res}]"
+            chart_spec = None
 
         # 4. Inverter efficiency curve  ── ISING SPECIALIST ──
         elif any(k in prompt_lower for k in ["efficiency", "dc-ac", "dc ac", "load factor",
@@ -1041,6 +1120,29 @@ class Agent:
                     if isinstance(result, list):
                         result = result[:12]   # keep forecast/series payloads compact
                     context_data = f"[Diagnostics: {intent}={result}]"
+                else:
+                    # Text-to-SQL: for arbitrary data questions, have the LLM write a
+                    # single read-only SELECT, then run it through the hardened guard
+                    # (SELECT-only, row-capped, read-only) and inject the results.
+                    sql_prompt = (
+                        "You are a SQLite expert for a solar plant telemetry database. "
+                        "There is ONE table named `telemetry` with columns: " + TELEMETRY_COLUMNS + ". "
+                        "device_group values: WEATHER, INVERTER, METER, BESS, PCS, PQM, DCCON, GATEWAY. "
+                        "timestamp is TEXT formatted 'YYYY-MM-DD HH:MM:SS'; meterId is prefixed "
+                        "'JAMNAGAR_VIRTUAL_GATEWAY_'. Write exactly ONE read-only SELECT query "
+                        "(no markdown fences, no prose, no trailing semicolon) that answers:\n" + prompt
+                    )
+                    try:
+                        sql_model = genai.GenerativeModel(model_name="gemini-2.0-flash")
+                        sql_resp = await loop.run_in_executor(None, lambda: sql_model.generate_content(sql_prompt))
+                        raw_sql = (getattr(sql_resp, "text", "") or "").strip()
+                        raw_sql = raw_sql.replace("```sql", "").replace("```SQL", "").replace("```", "").strip()
+                        if raw_sql.upper().startswith("SELECT"):
+                            thoughts.append(f"Text-to-SQL generated: {raw_sql[:120]}")
+                            res_str = await loop.run_in_executor(None, lambda: agent_setup.execute_sql_query(raw_sql))
+                            context_data = f"[Text-to-SQL] Executed: {raw_sql}\nResults: {res_str}"
+                    except Exception as sql_err:
+                        thoughts.append(f"Text-to-SQL failed ({str(sql_err)[:60]}).")
             except Exception as clf_err:
                 thoughts.append(f"Intent classifier unavailable ({str(clf_err)[:60]}).")
 
