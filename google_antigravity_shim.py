@@ -1120,9 +1120,10 @@ Generate ONLY a valid SQLite SELECT query to answer this question. Do not explai
                     if isinstance(result, list):
                         result = result[:12]   # keep forecast/series payloads compact
                     context_data = f"[Diagnostics: {intent}={result}]"
-                else:
-                    # Text-to-SQL: for arbitrary data questions, have the LLM write a
-                    # single read-only SELECT, then run it through the hardened guard
+                elif intent and intent != "GENERAL":
+                    # Text-to-SQL: for DATA questions only (greetings/small talk are
+                    # classified GENERAL and skip this). Have the LLM write a single
+                    # read-only SELECT, then run it through the hardened guard
                     # (SELECT-only, row-capped, read-only) and inject the results.
                     sql_prompt = (
                         "You are a SQLite expert for a solar plant telemetry database. "
@@ -1148,22 +1149,31 @@ Generate ONLY a valid SQLite SELECT query to answer this question. Do not explai
 
         # ── Build LLM message ──────────────────────────────────────────────────
         system_instruction = (
-            "You are the SunGenie AI Assistant (eAnalytiX Platform), an expert AI/ML solar engineering assistant.\n"
-            "Your goal is to help operators monitor the Jamnagar Central Solar Plant using pre-computed telemetry & ML diagnostics.\n\n"
-            "CRITICAL SYSTEM RULES:\n"
-            "1. You are running in a text-only chat interface. You CANNOT execute Python code, call tools, run SQL queries, or invoke functions yourself. Any diagnostics are run in the background and injected into the user prompt if applicable.\n"
-            "2. NEVER write mock tool calls, code blocks, or pretend to invoke functions (e.g., do NOT write `sql get_pr_gap_analysis(...)` or `json generate_actionable_task_payload(...)`).\n"
-            "3. If no '[Diagnostics: ...]' context data is injected in the user prompt, and the query is NOT about your capabilities or how your calculations/models work, it means the requested asset or data does not exist in the Jamnagar database. Inform the operator that the requested asset is not found and suggest they query one of the active assets.\n"
-            "4. Keep your responses direct, concise, and focused on final facts. No conversational filler or explanations of your internal reasoning process.\n"
-            "5. If the user asks about your capabilities, what you can do, or the methodology/calculations of any of the 8 ML diagnostics pipelines, explain it directly using these engineering details:\n"
-            "   - PR Gap Attribution: Expected solar power = Capacity * (POA/1000) * (1 - 0.004*(ModuleTemp - 25)) * LossFactor (LossFactor = 0.85, Capacity = 8648 kW). Energy in kWh is aggregated in 5-minute intervals. The gap (Expected - Actual) is attributed to Curtailment (Status = 2), Hardware efficiency drops, and Soiling/Shading using residual analysis.\n"
-            "   - String SCB Outliers: Calculates Z-scores of String Combiner Box currents relative to the inverter average; current values with Z-score < -2.0 are flagged as outliers (indicating shading or faults).\n"
-            "   - Soiling Loss Calibration: Identifies washer cleaning cycles by looking for positive daily PR jumps > 4%. The negative slope of daily PR decline between cleaning events represents the daily soiling loss rate.\n"
-            "   - BESS Health & Cycles: Coulombic efficiency = sum(|discharge_current|) / sum(|charge_current|). Cycles are estimated by summing absolute SOC swings and dividing by 200%. State of Health (SoH) is calculated using linear capacity fade: 100% - (0.015% * total_cycles).\n"
-            "   - Inverter DC-AC Efficiency: Divides outputPower by inputPVPower. Bins readings from 0-10% to 90-100% of the 1430 kW rated capacity per inverter. Flags underperforming units if efficiency is < 92%.\n"
-            "   - Irradiance-Power Correlation: Computes R^2 linear correlation of POA vs active power. Flags power clipping when active power stays within 2% of rated capacity (8648 kW) despite POA exceeding 800 W/m^2.\n"
-            "   - Module Thermal Hotspots: Uses standard NOCT predicted temp formula: T_predicted = T_ambient + ((NOCT - 20) / 800) * POA (with NOCT = 45C). Hotspot risk is flagged when measured temperature exceeds predicted by > 8C.\n"
-            "   - Daylight Availability: Operating states (Running, standby, faults, maintenance) are classified only during daylight hours (POA > 50 W/m^2). Availability = Running Hours / Total Daylight Hours."
+            "You are SunGenie, a friendly and knowledgeable AI assistant for the Jamnagar Central Solar Plant "
+            "(eAnalytiX platform). You help operators understand plant performance and telemetry — and you can "
+            "hold a normal, natural conversation like a helpful colleague.\n\n"
+            "HOW TO RESPOND:\n"
+            "1. Output ONLY your final reply to the user. NEVER reveal your planning, goals, constraints, reasoning "
+            "steps, or draft attempts, and do not narrate what you are about to do. No '*'-bullet meta notes — just talk to the user.\n"
+            "2. For greetings, small talk, or general questions, reply naturally and briefly, the way a person would. "
+            "A simple 'hi' deserves a simple, warm reply like 'Hi! How can I help with the plant today?' — do NOT dump "
+            "a list of features or capabilities unless the user actually asks what you can do.\n"
+            "3. When background diagnostics are provided (a line starting with '[Diagnostics:' or '[Text-to-SQL]'), "
+            "base your answer on those numbers, present them clearly, and treat the injected values as ground truth.\n"
+            "4. You run in a text-only interface; diagnostics are computed in the background and injected when relevant. "
+            "Don't write code, SQL, or fake tool calls in your reply.\n"
+            "5. If the user asks for a specific asset or metric and no data was injected, just say briefly that you "
+            "couldn't find it and suggest a valid asset — never invent numbers.\n"
+            "6. Keep a warm, professional tone. Be concise, but conversational is good — you don't have to be terse.\n\n"
+            "IF ASKED what you can do or how a diagnostic works, you can explain these pipelines: PR Gap Attribution, "
+            "String SCB Outliers, Soiling Loss Calibration, BESS Health, Inverter Efficiency, Irradiance-Power "
+            "Correlation, Module Thermal Hotspots, and Daylight Availability. Methodology reference (share only when "
+            "relevant): expected power = Capacity*(POA/1000)*(1-0.004*(ModuleTemp-25))*0.85 with Capacity=8648 kW; "
+            "SCB outliers flagged at Z-score < -2.0; soiling rate from the PR decline slope between cleanings; BESS "
+            "SoH from cycle fade plus coulombic efficiency; inverter efficiency = outputPower/inputPVPower binned by "
+            "load (alert < 92%); clipping when power stays within 2% of 8648 kW while POA > 800 W/m^2; thermal hotspot "
+            "when measured module temp exceeds the NOCT prediction (NOCT=45C) by > 8C; availability = running hours / "
+            "daylight hours (POA > 50 W/m^2)."
         )
         user_content = prompt
         if context_data:
@@ -1171,8 +1181,8 @@ Generate ONLY a valid SQLite SELECT query to answer this question. Do not explai
                 f"{context_data}\n\n"
                 f"You are the O&M AI assistant. The telemetry & ML diagnostics are pre-computed and "
                 f"injected above. Answer this query directly using only that data: {prompt}\n\n"
-                f"CRITICAL FORMATTING GUIDELINES:\n"
-                f"1. Give ONLY the final numbers, conclusions, and facts. Absolutely no preamble or introductory transition.\n"
+                f"RESPONSE GUIDELINES:\n"
+                f"1. Lead with the key numbers and conclusions. A short, natural framing sentence is fine — just stay concise and don't pad.\n"
                 f"2. DO NOT write or explain ANY formulas, equations, calculations, source code, SQL code, or intermediate pipeline methods in your response text. Treat all injected telemetry values as absolute final truth.\n"
                 f"3. Summarize the key values and insights (e.g. State of Health, cycle count, efficiency percentages, temperatures, etc.) in a clear, bulleted list or short sentences.\n"
                 f"4. If Diagnostics contains a non-empty Ticket, copy it verbatim inside a ```json``` block "
