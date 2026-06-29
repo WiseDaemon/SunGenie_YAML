@@ -282,7 +282,8 @@ def get_agent_config():
             "4. If the operator reports a real-world event the telemetry can't see (a panel cleaning, a confirmed "
             "fault, a BESS capacity test, or maintenance), call log_plant_event to record it; use get_plant_events "
             "to recall history. These labels train future predictive models.\n"
-            "5. Keep your responses concise, technical, and data-backed."
+            "5. CRITICAL: NEVER output your internal reasoning, goals, or planning steps (e.g., 'Agent Thoughts', 'User says...', 'Rule 1:'). Start your response directly with the final message to the user.\n"
+            "6. When a user says 'hi', 'hello', or makes small talk, reply warmly and conversationally in 1-2 sentences. Do NOT list out your capabilities unless explicitly asked, and do NOT be robotic."
         )
     )
     return config
