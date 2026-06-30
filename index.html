@@ -1333,11 +1333,8 @@
 
             const loadingMsg = document.getElementById(loadingId);
             try {
-                // Thoughts panel
+                // Thoughts panel hidden per user request
                 let thoughtsHtml = '';
-                if (data.thoughts?.length > 0) {
-                    thoughtsHtml = `<div class="thoughts-container"><strong>Process:</strong><br>${data.thoughts.map(t => `<div class="thought-line">&gt; ${t}</div>`).join('')}</div>`;
-                }
 
                 // Markdown-lite formatting with code block masking to preserve white spaces/new lines
                 let content = (data.response || 'No response received.');
