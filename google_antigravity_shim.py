@@ -5,7 +5,7 @@ import json
 import re
 from datetime import datetime, timedelta
 import pandas as pd
-import google.generativeai as genai
+import requests
 import config
 from utils import determine_device_group
 
@@ -13,7 +13,26 @@ sys.path.append(os.path.dirname(__file__))
 import ml_pipelines
 import agent_setup
 
-MODEL_NAME = "gemma-4-26b-a4b-it"
+MODEL_NAME = "google/gemma-3-12b-it"
+
+def _call_nvidia(model_name, api_key, messages, temperature=0.2, max_tokens=32768, stream=False):
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Accept": "text/event-stream" if stream else "application/json"
+    }
+    payload = {
+        "model": model_name,
+        "messages": messages,
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "top_p": 1.00,
+        "stream": stream,
+    }
+    resp = requests.post(config.NVIDIA_URL, headers=headers, json=payload, stream=stream)
+    resp.raise_for_status()
+    if stream:
+        return resp.iter_lines()
+    return resp.json()
 
 # Compact schema used to ground text-to-SQL generation (ARC-03 fallback).
 TELEMETRY_COLUMNS = (
@@ -511,10 +530,8 @@ def get_generic_asset_data(meter_id, limit=5):
 class Agent:
     def __init__(self, config):
         self.config = config
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY not set in .env")
-        genai.configure(api_key=api_key)
+        if not LLAMA_KEY:
+            raise ValueError("NVIDIA_LLAMA_KEY not set in .env")
 
     async def __aenter__(self):
         return self
@@ -619,9 +636,11 @@ Generate ONLY a valid SQLite SELECT query to answer this question. Do not explai
 """
             
             try:
-                sql_model = genai.GenerativeModel("gemini-2.5-pro")
-                sql_response = await sql_model.generate_content_async(sql_gen_prompt)
-                generated_sql = sql_response.text.strip().replace("```sql", "").replace("```", "").strip()
+                sql_resp = await loop.run_in_executor(
+                    None, lambda: _call_nvidia(MODEL_NAME, LLAMA_KEY, [{"role": "user", "content": sql_gen_prompt}], temperature=0.0)
+                )
+                raw_sql = sql_resp.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                generated_sql = raw_sql.replace("```sql", "").replace("```SQL", "").replace("```", "").strip()
                 
                 if not generated_sql.upper().startswith("SELECT"):
                     thoughts.append("Safety check failed: LLM generated non-SELECT query.")
@@ -1180,9 +1199,11 @@ Generate ONLY a valid SQLite SELECT query to answer this question. Do not explai
                     "Respond with ONLY the label, nothing else.\n\n"
                     f"Query: {prompt}"
                 )
-                clf_model = genai.GenerativeModel(model_name="gemini-2.0-flash")
-                clf_resp = await loop.run_in_executor(None, lambda: clf_model.generate_content(clf_prompt))
-                intent = (getattr(clf_resp, "text", "") or "").strip().upper()
+                clf_resp = await loop.run_in_executor(
+                    None, lambda: _call_nvidia(MODEL_NAME, LLAMA_KEY, [{"role": "user", "content": clf_prompt}], temperature=0.0)
+                )
+                raw_clf = clf_resp.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+                intent = raw_clf.strip().upper()
                 thoughts.append(f"Intent classifier routed query to: {intent}")
 
                 dispatch = {
@@ -1219,9 +1240,10 @@ Generate ONLY a valid SQLite SELECT query to answer this question. Do not explai
                         "(no markdown fences, no prose, no trailing semicolon) that answers:\n" + prompt
                     )
                     try:
-                        sql_model = genai.GenerativeModel(model_name="gemini-2.0-flash")
-                        sql_resp = await loop.run_in_executor(None, lambda: sql_model.generate_content(sql_prompt))
-                        raw_sql = (getattr(sql_resp, "text", "") or "").strip()
+                        sql_resp = await loop.run_in_executor(
+                            None, lambda: _call_nvidia(MODEL_NAME, LLAMA_KEY, [{"role": "user", "content": sql_prompt}], temperature=0.0)
+                        )
+                        raw_sql = sql_resp.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
                         raw_sql = raw_sql.replace("```sql", "").replace("```SQL", "").replace("```", "").strip()
                         if raw_sql.upper().startswith("SELECT"):
                             thoughts.append(f"Text-to-SQL generated: {raw_sql[:120]}")
@@ -1262,62 +1284,35 @@ Generate ONLY a valid SQLite SELECT query to answer this question. Do not explai
             messages.append({"role": "system", "content": system_instruction})
         messages.append({"role": "user", "content": user_content})
 
-        # ── Generic Nvidia caller ──────────────────────────────────────────────
-        def _call_nvidia(model_name, api_key, temperature=0.5, max_tokens=4096):
-            import urllib.request
-            hdrs = {
-                "Content-Type":  "application/json",
-                "Authorization": f"Bearer {api_key}"
-            }
-            body = json.dumps({
-                "model":       model_name,
-                "messages":    messages,
-                "temperature": temperature,
-                "max_tokens":  max_tokens,
-            }).encode("utf-8")
-            req = urllib.request.Request(NVIDIA_URL, data=body, headers=hdrs, method="POST")
-            with urllib.request.urlopen(req, timeout=45) as resp:
-                return resp.read().decode("utf-8")
-
-        # ── Primary: Google Gemini (Gemma 4 26B) ──────────────────────────────────
-        try:
-            thoughts.append(f"Consulting Google Gemini ({MODEL_NAME})...")
-            model = genai.GenerativeModel(model_name=MODEL_NAME, system_instruction=system_instruction)
-            response = await loop.run_in_executor(None, lambda: model.generate_content(user_content))
-            return AgentResponse(response.text, thoughts, chart_spec)
-        except Exception as e:
-            thoughts.append(f"Gemini failed ({str(e)[:80]}). Falling back to Nvidia...")
-
-        # ── Secondary fallback: Nvidia Ising Calibration 35B ──
+        # ── Primary fallback: Nvidia Ising Calibration 35B ──
         if use_ising:
             thoughts.append("Routing to Nvidia Ising Calibration 35B (physics specialist)...")
             try:
-                raw  = await loop.run_in_executor(
+                resp_json = await loop.run_in_executor(
                     None, lambda: _call_nvidia("nvidia/ising-calibration-1-35b-a3b",
-                                               ISING_KEY, temperature=0.20, max_tokens=32768)
+                                               ISING_KEY, messages, temperature=0.20, max_tokens=32768)
                 )
-                resp_json = json.loads(raw)
-                choices   = resp_json.get("choices", [])
+                choices = resp_json.get("choices", [])
                 if choices:
                     return AgentResponse(choices[0]["message"]["content"], thoughts, chart_spec)
-                raise ValueError(f"Empty choices: {raw[:200]}")
+                raise ValueError(f"Empty choices: {str(resp_json)[:200]}")
             except Exception as ising_err:
                 thoughts.append(f"Ising 35B unavailable ({str(ising_err)[:80]}). Falling back to Gemma 3 12B...")
                 use_ising = False
 
-        # ── Tertiary fallback: Nvidia Gemma 3 12B ──
+        # ── Secondary fallback: Nvidia Gemma 3 12B ──
         if not use_ising:
             thoughts.append("Consulting Nvidia Gemma 3 12B (integrate.api.nvidia.com)...")
             try:
-                raw  = await loop.run_in_executor(
-                    None, lambda: _call_nvidia("google/gemma-3-12b-it",
-                                               LLAMA_KEY, temperature=0.5, max_tokens=4096)
+                resp_json = await loop.run_in_executor(
+                    None, lambda: _call_nvidia(MODEL_NAME,
+                                               LLAMA_KEY, messages, temperature=0.5, max_tokens=4096)
                 )
-                resp_json = json.loads(raw)
-                choices   = resp_json.get("choices", [])
+                choices = resp_json.get("choices", [])
                 if choices:
                     return AgentResponse(choices[0]["message"]["content"], thoughts, chart_spec)
-                raise ValueError(f"Empty choices: {raw[:200]}")
+                raise ValueError(f"Empty choices: {str(resp_json)[:200]}")
             except Exception as gemma_err:
                 thoughts.append(f"Gemma 3 12B failed ({str(gemma_err)[:80]}).")
                 return AgentResponse(f"All AI backends unavailable. Last error: {str(gemma_err)}", thoughts)
+

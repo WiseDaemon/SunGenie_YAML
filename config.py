@@ -30,7 +30,6 @@ EVENTS_DB_PATH = os.environ.get(
 )
 
 # --- API Keys (read from environment / .env — never hardcode) ---------------
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 NVIDIA_ISING_KEY = os.environ.get("NVIDIA_ISING_KEY")
 NVIDIA_LLAMA_KEY = os.environ.get("NVIDIA_LLAMA_KEY")
 NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
