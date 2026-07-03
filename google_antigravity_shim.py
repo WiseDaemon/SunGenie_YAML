@@ -148,22 +148,46 @@ class AgentResponse:
 # Each returns a Chart.js-compatible config dict (passed as JSON to the front-end)
 
 def _chart_pr_gap(gen_res):
-    attr = gen_res["attribution"]
+    expected = gen_res.get("expected_kwh", 0)
+    actual = gen_res.get("actual_kwh", 0)
+    attr = gen_res.get("attribution", {})
+    
+    labels = ["Expected"]
+    data = [[0, round(expected, 2)]]
+    colors = ["rgba(9,137,177,0.8)"]
+    
+    running_val = expected
+    for k, v in attr.items():
+        labels.append(k)
+        next_val = running_val - v
+        data.append([round(next_val, 2), round(running_val, 2)])
+        colors.append("rgba(239,68,68,0.75)")
+        running_val = next_val
+        
+    labels.append("Actual")
+    data.append([0, round(actual, 2)])
+    colors.append("rgba(57,255,20,0.8)")
+    
     return {
         "type": "bar",
         "title": f"PR Gap Attribution — {gen_res['gap_kwh']:,} kWh total gap",
-        "description": "Calculates expected vs actual generation and attributes the gap to soiling, shading, hardware inefficiency, and grid curtailment.",
+        "description": "Calculates expected vs actual generation and attributes the gap using a waterfall breakdown.",
         "data": {
-            "labels": list(attr.keys()),
+            "labels": labels,
             "datasets": [{
-                "label": "Loss (kWh)",
-                "data": list(attr.values()),
-                "backgroundColor": ["rgba(138,184,51,0.75)", "rgba(9,137,177,0.75)",
-                                    "rgba(74,181,196,0.75)", "rgba(2,150,118,0.75)"],
-                "borderRadius": 6
+                "label": "Energy (kWh)",
+                "data": data,
+                "backgroundColor": colors,
+                "borderRadius": 4
             }]
         },
-        "options": {"scales": {"y": {"beginAtZero": True}}}
+        "options": {
+            "scales": {
+                "y": {
+                    "beginAtZero": True
+                }
+            }
+        }
     }
 
 

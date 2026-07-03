@@ -1196,7 +1196,7 @@ let charts = {};
                 } catch(e) { console.error(e); }
 
                 // --- Charts ---
-                try { renderPrGap(prData.attribution || {}, prData.gap_kwh || 0); } catch(e) { console.error(e); }
+                try { renderPrGap(prData); } catch(e) { console.error(e); }
                 try { renderEffCurve(effData.fleet_curve || []); } catch(e) { console.error(e); }
                 try { renderIrradiance(irrData.scatter_data || []); } catch(e) { console.error(e); }
                 try { renderCurtailment(curtData.category_breakdown_hours || {}); } catch(e) { console.error(e); }
@@ -1215,22 +1215,73 @@ let charts = {};
 
         function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
 
-        function renderPrGap(attribution, gap) {
+        function renderPrGap(prData) {
             destroyChart('prGap');
             const ctx = document.getElementById('prGapChart').getContext('2d');
+            if (prData.error) return;
+            
+            const expected = prData.expected_kwh || 0;
+            const actual = prData.actual_kwh || 0;
+            const attribution = prData.attribution || {};
+            
+            const labels = ['Expected'];
+            const data = [[0, expected]];
+            const colors = ['rgba(9,137,177,0.8)'];
+            
+            let runningVal = expected;
+            for (const [key, loss] of Object.entries(attribution)) {
+                labels.push(key);
+                const nextVal = runningVal - loss;
+                data.push([nextVal, runningVal]);
+                colors.push('rgba(239,68,68,0.75)');
+                runningVal = nextVal;
+            }
+            
+            labels.push('Actual');
+            data.push([0, actual]);
+            colors.push('rgba(57,255,20,0.8)');
+            
             charts['prGap'] = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(attribution),
-                    datasets: [{ label: 'Loss (kWh)', data: Object.values(attribution),
-                        backgroundColor: ['rgba(138,184,51,0.75)','rgba(9,137,177,0.75)','rgba(74,181,196,0.75)','rgba(2,150,118,0.75)'],
-                        borderColor: ['#8ab833','#0989b1','#4ab5c4','#029676'], borderWidth: 1.5, borderRadius: 6 }]
+                    labels: labels,
+                    datasets: [{
+                        label: 'Energy (kWh)',
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: colors.map(c => c.replace('0.75', '1.0').replace('0.8', '1.0')),
+                        borderWidth: 1.5,
+                        borderRadius: 4
+                    }]
                 },
-                options: { responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const val = context.raw;
+                                    if (Array.isArray(val)) {
+                                        const diff = val[1] - val[0];
+                                        return `${context.label}: -${Math.round(diff).toLocaleString()} kWh (${Math.round(val[0]).toLocaleString()} to ${Math.round(val[1]).toLocaleString()})`;
+                                    }
+                                    return `${context.label}: ${Math.round(val).toLocaleString()} kWh`;
+                                }
+                            }
+                        }
+                    },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
-                        x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 10 } } }
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#9ca3af' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#9ca3af', font: { size: 10 } }
+                        }
                     }
                 }
             });
@@ -1524,20 +1575,11 @@ let charts = {};
                     const titleText = chartSpec.title || '';
                     const descText = chartSpec.description || 'Telemetry chart comparison.';
                     chartHtml = `
-                        <div class="chat-chart-wrapper" style="
-                            background: rgba(0,0,0,0.3);
-                            border: 1px solid var(--card-border);
-                            border-radius: 10px;
-                            padding: 0.75rem;
-                            margin-top: 0.75rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                ${titleText ? `<div style="font-size:0.75rem;font-weight:600;color:var(--accent-lime);letter-spacing:0.3px;">${titleText}</div>` : '<div></div>'}
-                                <div class="info-container">
-                                    <div class="info-icon">i</div>
-                                    <div class="tooltip-text" style="right: 0; left: auto; top: 18px;">${descText}</div>
-                                </div>
+                        <div class="chat-chart-wrapper bg-black/30 border border-white/10 rounded-xl p-3 mt-3">
+                            <div class="flex justify-between items-center mb-2">
+                                ${titleText ? `<div class="text-[10px] font-bold text-[#39ff14] tracking-wider uppercase">${titleText}</div>` : '<div></div>'}
                             </div>
-                            <div style="position:relative;height:220px;">
+                            <div style="position:relative;height:200px;">
                                 <canvas id="${chartCanvasId}"></canvas>
                             </div>
                         </div>`;
@@ -1546,17 +1588,14 @@ let charts = {};
                 // Inject HTML
                 const msgId = 'msg-' + Date.now();
                 loadingMsg.outerHTML = `
-                    <div class="message agent" style="max-width:95%;" id="${msgId}" data-prompt="${prompt.replace(/"/g, '&quot;')}" data-response="${content.replace(/"/g, '&quot;')}">
+                <div class="flex flex-col gap-1 max-w-[90%]" id="${msgId}" data-prompt="${prompt.replace(/"/g, '&quot;')}" data-response="${content.replace(/"/g, '&quot;')}">
+                    <span class="text-[10px] text-gray-400 ml-2">Solar AI</span>
+                    <div class="bg-[#1e2024]/40 border border-white/10 text-white rounded-xl rounded-tl-sm p-3 shadow-md">
                         ${thoughtsHtml}
-                        <div class="markdown-content">${content}</div>
+                        <div class="markdown-content text-xs">${content}</div>
                         ${chartHtml}
-                        <div class="feedback-widget" style="margin-top:10px; padding-top:5px; border-top:1px solid var(--border-color); display:flex; gap:10px; font-size:12px; align-items:center;">
-                            <span style="color:var(--text-secondary);">Helpful?</span>
-                            <button onclick="submitFeedback('${msgId}', 1)" style="background:none; border:none; cursor:pointer; font-size:16px;" title="Yes">👍</button>
-                            <button onclick="submitFeedback('${msgId}', -1)" style="background:none; border:none; cursor:pointer; font-size:16px;" title="No">👎</button>
-                            <div id="fb-status-${msgId}" style="display:none; color:var(--success-color); margin-left:10px;">Thanks for the feedback!</div>
-                        </div>
-                    </div>`;
+                    </div>
+                </div>`;
 
                 // Render Chart.js after DOM is ready using setTimeout
                 if (data.chart) {
