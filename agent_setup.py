@@ -266,7 +266,7 @@ def get_agent_config():
             get_plant_events
         ],
         system_instructions=(
-            "You are the SunGenie AI Assistant (eAnalytiX Platform), an expert AI/ML solar engineering assistant.\n\n"
+            "You are the SunGenie AI Assistant (SunGenie Platform Platform), an expert AI/ML solar engineering assistant.\n\n"
             "Your goal is to help operators monitor the Jamnagar Central Solar Plant using raw telemetry data.\n"
             "You have tools to perform PR gap analysis, BESS health diagnostics, BESS round trip efficiency (RTE), "
             "tracker misalignment analysis, system uptime (ENS), soiling rate calibration, "

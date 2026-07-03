@@ -1,7 +1,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JioSunGenie eAnalytiX - AI/ML Solar Portal</title>
+    <title>JioSunGenie SunGenie Platform - AI/ML Solar Portal</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
@@ -87,27 +87,27 @@
             <span class="material-symbols-outlined text-[#39ff14]" style="font-variation-settings: 'FILL' 1;">bolt</span>
         </div>
         <div class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div class="font-headline-md text-lg font-bold text-[#39ff14] tracking-tight">eAnalytiX</div>
+            <div class="font-headline-md text-lg font-bold text-[#39ff14] tracking-tight">SunGenie Platform</div>
             <div class="text-[10px] text-gray-400 uppercase tracking-wider">Precision Control</div>
         </div>
     </div>
     <div class="flex-1 w-64 flex flex-col gap-2 px-3 mt-4">
-        <a class="flex items-center px-3 py-3 rounded-xl text-[#39ff14] bg-[#39ff14]/5 border-l-4 border-[#39ff14]" href="#">
+        <button id="nav-btn-dashboard" onclick="switchView('dashboard')" class="nav-btn flex items-center px-3 py-3 w-full rounded-xl text-[#39ff14] bg-[#39ff14]/5 border-l-4 border-[#39ff14]">
             <span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 1;">dashboard</span>
             <span class="ml-4 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">Dashboard</span>
-        </a>
-        <a class="flex items-center px-3 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent" href="#">
+        </button>
+        <button id="nav-btn-analytics" onclick="switchView('analytics')" class="nav-btn flex items-center px-3 py-3 w-full rounded-xl text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent">
             <span class="material-symbols-outlined shrink-0">monitoring</span>
             <span class="ml-4 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">Analytics</span>
-        </a>
-        <a class="flex items-center px-3 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent" href="#">
+        </button>
+        <button id="nav-btn-assets" onclick="switchView('assets')" class="nav-btn flex items-center px-3 py-3 w-full rounded-xl text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent">
             <span class="material-symbols-outlined shrink-0">solar_power</span>
             <span class="ml-4 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">Assets</span>
-        </a>
-        <a class="flex items-center px-3 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent" href="#">
+        </button>
+        <button id="nav-btn-settings" onclick="switchView('settings')" class="nav-btn flex items-center px-3 py-3 w-full rounded-xl text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent">
             <span class="material-symbols-outlined shrink-0">settings</span>
             <span class="ml-4 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">Settings</span>
-        </a>
+        </button>
     </div>
 </nav>
 
@@ -116,7 +116,7 @@
     <!-- Header -->
     <header class="h-20 flex-shrink-0 flex items-center justify-between px-8 border-b border-white/5 bg-[#0c0e12]/20 backdrop-blur-md relative z-10">
         <div>
-            <h1 class="text-xl font-bold text-white tracking-tight">SunGenie eAnalytiX</h1>
+            <h1 class="text-xl font-bold text-white tracking-tight">SunGenie SunGenie Platform</h1>
             <div class="flex items-center gap-2 mt-1">
                 <span class="relative flex h-2 w-2">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#39ff14] opacity-75"></span>
@@ -146,6 +146,8 @@
 
     <!-- Scrollable Workspace Dashboard -->
     <div class="flex-1 overflow-y-auto p-8 custom-scrollbar pb-24">
+        <!-- Dashboard View -->
+        <div id="dashboard-view" class="view-content active">
         <!-- KPI Grid 1 -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <!-- Expected vs Actual -->
@@ -332,6 +334,106 @@
             </div>
         </div>
     </div>
+
+        </div> <!-- End Dashboard View -->
+
+        <!-- Analytics View -->
+        <div id="analytics-view" class="view-content hidden">
+            <div class="glass-panel rounded-xl p-6 mb-6">
+                <h2 class="text-xl font-bold text-white mb-2">Performance Analytics</h2>
+                <p class="text-xs text-gray-400">Detailed overview of plant-level ML calibrations and statistical distributions.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-panel rounded-xl p-6 flex flex-col">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Analytical Insights</h3>
+                    <p class="text-xs text-gray-400 leading-relaxed mb-4">
+                        The analytics console provides access to cross-correlation matrices between Plane-of-Array (POA) irradiance sensors and inverter conversion thresholds.
+                    </p>
+                    <div class="bg-white/5 border border-white/10 rounded-lg p-4 text-xs space-y-2">
+                        <div class="flex justify-between"><span>Fleet R² Variance:</span><span class="text-[#39ff14] font-semibold">0.942 - 0.985</span></div>
+                        <div class="flex justify-between"><span>Clipping Threshold:</span><span class="text-[#f59e0b] font-semibold">2,200 kW</span></div>
+                        <div class="flex justify-between"><span>Mean Absolute Error:</span><span class="text-[#4AB5C4] font-semibold">1.84%</span></div>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-xl p-6 flex flex-col">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Calibration Models</h3>
+                    <p class="text-xs text-gray-400 leading-relaxed mb-4">
+                        Active regression algorithms automatically recalculate loss factors at sunset.
+                    </p>
+                    <div class="bg-white/5 border border-white/10 rounded-lg p-4 text-xs space-y-2">
+                        <div class="flex justify-between"><span>PR Gap Estimation:</span><span class="text-[#39ff14] font-semibold">OLS Polynomial (Deg 3)</span></div>
+                        <div class="flex justify-between"><span>Soiling Estimator:</span><span class="text-[#39ff14] font-semibold">Bayesian Change-Point</span></div>
+                        <div class="flex justify-between"><span>Thermal Model:</span><span class="text-[#39ff14] font-semibold">NOCT-Ambient Delta</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assets View -->
+        <div id="assets-view" class="view-content hidden">
+            <div class="glass-panel rounded-xl p-6 mb-6">
+                <h2 class="text-xl font-bold text-white mb-2">Solar Plant Assets</h2>
+                <p class="text-xs text-gray-400">Inventory of operational assets at Jamnagar Block 1 & 2.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-panel rounded-xl p-6">
+                    <h3 class="font-bold text-white mb-2">Inverters</h3>
+                    <div class="text-xs text-[#39ff14] font-bold mb-4">12 Units Active</div>
+                    <ul class="text-xs text-gray-400 space-y-2">
+                        <li>• JAM_INV01 (Delta M125)</li>
+                        <li>• JAM_INV02 (Delta M125)</li>
+                        <li>• JAM_INV03 (Delta M125)</li>
+                        <li>• JAM_INV04 (Delta M125 - Anomaly: High Temp)</li>
+                    </ul>
+                </div>
+                <div class="glass-panel rounded-xl p-6">
+                    <h3 class="font-bold text-white mb-2">BESS Containers</h3>
+                    <div class="text-xs text-[#007bff] font-bold mb-4">2 containers Active</div>
+                    <ul class="text-xs text-gray-400 space-y-2">
+                        <li>• BESS_CONT1 (10MWh LiFePO4)</li>
+                        <li>• BESS_CONT2 (10MWh LiFePO4)</li>
+                    </ul>
+                </div>
+                <div class="glass-panel rounded-xl p-6">
+                    <h3 class="font-bold text-white mb-2">Weather Stations</h3>
+                    <div class="text-xs text-white font-bold mb-4">1 WMS Active</div>
+                    <ul class="text-xs text-gray-400 space-y-2">
+                        <li>• POA Pyranometer 01</li>
+                        <li>• Ambient Temp RTD</li>
+                        <li>• Module Temp RTD</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settings-view" class="view-content hidden">
+            <div class="glass-panel rounded-xl p-6 mb-6">
+                <h2 class="text-xl font-bold text-white mb-2">Platform Settings</h2>
+                <p class="text-xs text-gray-400">Configure parameters for RAG backend and O&M thresholds.</p>
+            </div>
+            <div class="glass-panel rounded-xl p-6 max-w-xl">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Alert Thresholds</h3>
+                <div class="space-y-4 text-xs text-gray-400">
+                    <div>
+                        <label class="block mb-1">SCB Current Anomaly Threshold (Z-Score)</label>
+                        <input type="text" value="-2.0" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
+                    </div>
+                    <div>
+                        <label class="block mb-1">Max Inverter Temperature Limit (°C)</label>
+                        <input type="text" value="85.0" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
+                    </div>
+                    <div>
+                        <label class="block mb-1">Wash Cycle Target Interval (Days)</label>
+                        <input type="text" value="15" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
+                    </div>
+                    <button class="bg-[#39ff14] text-[#0A0C10] font-bold py-2 px-4 rounded-lg text-xs hover:bg-[#39ff14]/80 transition-colors">
+                        Save Configurations
+                    </button>
+                </div>
+            </div>
+        </div>
 </main>
 
 <!-- Right Sidebar Chat Panel (Docked Right) -->
@@ -358,6 +460,14 @@
         </div>
     </div>
 
+    <!-- Chat suggestions -->
+    <div class="flex flex-wrap gap-1.5 mb-2 px-1">
+        <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('What is the overall generation performance and PR gap breakdown for the plant?')">PR Gap Breakdown</button>
+        <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('Are there any underperforming strings on Inverter B1INV1?')">String Outlier Check</button>
+        <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('What is the health and cycle count of battery B1BCT1?')">Battery Health</button>
+        <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('What is the inverter fleet DC-AC conversion efficiency across different load levels?')">Inverter Efficiency</button>
+    </div>
+    
     <!-- Input area -->
     <div class="mt-auto relative">
         <input id="user-input" class="w-full bg-[#1e2024] border-0 border-b border-white/20 focus:border-[#39ff14] focus:ring-0 text-white text-xs py-3 pl-4 pr-12 transition-colors rounded-t-lg" placeholder="Ask AI to analyze data..." type="text" onkeydown="if(event.key === 'Enter') sendMessage()"/>
@@ -370,6 +480,30 @@
 <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 <script>
 let charts = {};
+
+        function switchView(viewId) {
+            // Hide all views
+            document.querySelectorAll('.view-content').forEach(view => {
+                view.classList.add('hidden');
+                view.classList.remove('active');
+            });
+            // Show the selected view
+            const activeView = document.getElementById(viewId + '-view');
+            if (activeView) {
+                activeView.classList.remove('hidden');
+                activeView.classList.add('active');
+            }
+            
+            // Update nav button styling
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = "nav-btn flex items-center px-3 py-3 w-full rounded-xl text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent";
+            });
+            const activeBtn = document.getElementById('nav-btn-' + viewId);
+            if (activeBtn) {
+                activeBtn.className = "nav-btn flex items-center px-3 py-3 w-full rounded-xl text-[#39ff14] bg-[#39ff14]/5 border-l-4 border-[#39ff14]";
+            }
+        }
+
         let activeTimeframe = 'live';
         let customStart = '';
         let customEnd = '';
@@ -1667,7 +1801,7 @@ let charts = {};
             // 13. Capabilities & Calculation methodology questions
             } else if (lower.includes("what can you do") || lower.includes("capabilities") || lower.includes("help") || lower.includes("how do you") || lower.includes("how does") || lower.includes("how is") || lower.includes("methodology") || lower.includes("calculate") || lower.includes("calibrate")) {
                 thoughts.push("Loading capabilities and calculation methodology...");
-                responseText = `### JioSunGenie eAnalytiX Capabilities &amp; Methodology\n\nI am a telemetry-calibrated O&amp;M assistant, calibrated on **8 active ML pipelines** and directly connected to the Jamnagar SQLite database.\n\n#### 🛠️ Core Capabilities\n1. **PR Gap Loss Attribution**: Calculates performance ratio and breaks down losses (Soiling, Shading, Hardware, Grid Curtailment).\n2. **String Outlier Check (SCB)**: Uses Z-score calculations to detect faulty/underperforming solar strings.\n3. **Unsupervised Soiling Loss Calibration**: Estimates daily dust accumulation rates using change-point analysis of panel washing cycles.\n4. **BESS Health Monitor (SoH)**: Calculates coulombic efficiency and estimates BESS capacity wear over cycles.\n5. **Inverter DC-AC Efficiency**: Bins conversion efficiency by load factor to spot underperforming units.\n6. **Irradiance-Power Correlation**: Computes POA R² and detects power clipping.\n7. **Thermal Hotspot Detection**: Flags module anomalies by comparing measured temperature to the NOCT cell temperature model.\n8. **Daylight Availability &amp; Curtailment**: Calculates availability restricted to active daylight windows (POA &gt; 50 W/m²).\n\n#### 🧮 Mathematical Formulas &amp; Models\n*   **Performance Ratio**: \\(PR = \\frac{E_{\\text{actual}}}{E_{\\text{expected}}}\\)\n*   **Expected Power**: \\(P_{\\text{exp}} = \\text{Capacity} \\cdot \\left(\\frac{\\text{POA}}{1000}\\right) \\cdot (1 - 0.004 \\cdot (T_{\\text{mod}} - 25)) \\cdot \\text{LossFactor}\\)\n*   **String Current Z-Score**: \\(Z_i = \\frac{x_i - \\mu}{\\sigma}\\) (anomalies flagged when \\(Z_i &lt; -2.0\\))\n*   **BESS Coulombic Efficiency**: \\(\\eta_C = \\frac{\\sum |I_{\\text{discharge}}|}{\\sum |I_{\\text{charge}}|}\\)\n*   **Predicted Module Temp**: \\(T_{\\text{pred}} = T_{\\text{ambient}} + \\left(\\frac{\\text{NOCT} - 20}{800}\\right) \\cdot \\text{POA}\\) (hotspots flagged where \\(T_{\\text{measured}} - T_{\\text{pred}} &gt; 8^\\circ\\text{C}\\))\n\n*I use **Gemma 4 26B** as my primary reasoning model, with Nvidia Ising Calibration 35B and Gemma 3 12B as dedicated fallbacks.*`;
+                responseText = `### JioSunGenie SunGenie Platform Capabilities &amp; Methodology\n\nI am a telemetry-calibrated O&amp;M assistant, calibrated on **8 active ML pipelines** and directly connected to the Jamnagar SQLite database.\n\n#### 🛠️ Core Capabilities\n1. **PR Gap Loss Attribution**: Calculates performance ratio and breaks down losses (Soiling, Shading, Hardware, Grid Curtailment).\n2. **String Outlier Check (SCB)**: Uses Z-score calculations to detect faulty/underperforming solar strings.\n3. **Unsupervised Soiling Loss Calibration**: Estimates daily dust accumulation rates using change-point analysis of panel washing cycles.\n4. **BESS Health Monitor (SoH)**: Calculates coulombic efficiency and estimates BESS capacity wear over cycles.\n5. **Inverter DC-AC Efficiency**: Bins conversion efficiency by load factor to spot underperforming units.\n6. **Irradiance-Power Correlation**: Computes POA R² and detects power clipping.\n7. **Thermal Hotspot Detection**: Flags module anomalies by comparing measured temperature to the NOCT cell temperature model.\n8. **Daylight Availability &amp; Curtailment**: Calculates availability restricted to active daylight windows (POA &gt; 50 W/m²).\n\n#### 🧮 Mathematical Formulas &amp; Models\n*   **Performance Ratio**: \\(PR = \\frac{E_{\\text{actual}}}{E_{\\text{expected}}}\\)\n*   **Expected Power**: \\(P_{\\text{exp}} = \\text{Capacity} \\cdot \\left(\\frac{\\text{POA}}{1000}\\right) \\cdot (1 - 0.004 \\cdot (T_{\\text{mod}} - 25)) \\cdot \\text{LossFactor}\\)\n*   **String Current Z-Score**: \\(Z_i = \\frac{x_i - \\mu}{\\sigma}\\) (anomalies flagged when \\(Z_i &lt; -2.0\\))\n*   **BESS Coulombic Efficiency**: \\(\\eta_C = \\frac{\\sum |I_{\\text{discharge}}|}{\\sum |I_{\\text{charge}}|}\\)\n*   **Predicted Module Temp**: \\(T_{\\text{pred}} = T_{\\text{ambient}} + \\left(\\frac{\\text{NOCT} - 20}{800}\\right) \\cdot \\text{POA}\\) (hotspots flagged where \\(T_{\\text{measured}} - T_{\\text{pred}} &gt; 8^\\circ\\text{C}\\))\n\n*I use **Gemma 4 26B** as my primary reasoning model, with Nvidia Ising Calibration 35B and Gemma 3 12B as dedicated fallbacks.*`;
 
             // Default fallback
             } else {

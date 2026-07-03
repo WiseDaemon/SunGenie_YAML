@@ -22,7 +22,7 @@ from google_antigravity_shim import Agent
 
 # --- Rate limiting (SEC-03) -------------------------------------------------
 limiter = Limiter(key_func=get_remote_address)
-app = FastAPI(title="JioSunGenie eAnalytiX AI Backend", version="1.0.0")
+app = FastAPI(title="JioSunGenie SunGenie Platform AI Backend", version="1.0.0")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -291,7 +291,7 @@ if __name__ == "__main__":
         s.close()
     except Exception:
         pass
-    print("Starting SunGenie eAnalytiX local portal...")
+    print("Starting SunGenie SunGenie Platform local portal...")
     print(f"  - Local Access:     http://localhost:8080")
     print(f"  - Network Access:   http://{local_ip}:8080")
     if _API_KEY_IS_EPHEMERAL:
