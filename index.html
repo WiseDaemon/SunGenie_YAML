@@ -1,14 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JioSunGenie eAnalytiX - AI/ML Solar Portal</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SunGenie eAnalytiX - Dashboard</title>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- SEC-05: API key for /api/* calls. Injected by app_server.py at serve time. -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script>
         window.SUNGENIE_API_KEY = "";
         function apiHeaders(extra) {
@@ -21,2046 +19,457 @@
             return url + (url.includes('?') ? '&' : '?') + 'api_key=' + encodeURIComponent(window.SUNGENIE_API_KEY);
         }
     </script>
-    <style>
-        :root {
-            --bg-color: #0b0f19;
-            --card-bg: rgba(20, 28, 47, 0.45);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --text-primary: #f3f4f6;
-            --text-secondary: #9ca3af;
-            --accent-green: #549e39;
-            --accent-lime: #8ab833;
-            --accent-teal: #029676;
-            --accent-cyan: #4ab5c4;
-            --accent-blue: #0989b1;
-            --accent-orange: #f59e0b;
-            --accent-red: #ef4444;
-            --glow-color: rgba(138, 184, 51, 0.15);
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Sora:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "on-primary": "#053900",
+                        "tertiary-fixed": "#ffdfa0",
+                        "on-error": "#690005",
+                        "surface-variant": "#333539",
+                        "on-primary-fixed": "#022100",
+                        "surface-container": "#1e2024",
+                        "primary-fixed-dim": "#2ae500",
+                        "on-secondary-fixed": "#001a41",
+                        "secondary": "#adc7ff",
+                        "on-background": "#e2e2e8",
+                        "surface-container-high": "#282a2e",
+                        "secondary-fixed-dim": "#adc7ff",
+                        "on-surface-variant": "#baccb0",
+                        "primary-fixed": "#79ff5b",
+                        "on-secondary": "#002e68",
+                        "on-primary-fixed-variant": "#095300",
+                        "outline-variant": "#3c4b35",
+                        "surface-container-lowest": "#0c0e12",
+                        "tertiary-fixed-dim": "#fbbc00",
+                        "surface-dim": "#111318",
+                        "on-secondary-container": "#00285b",
+                        "inverse-surface": "#e2e2e8",
+                        "error-container": "#93000a",
+                        "surface": "#111318",
+                        "background": "#111318",
+                        "on-tertiary": "#402d00",
+                        "on-primary-container": "#107100",
+                        "on-tertiary-container": "#7c5c00",
+                        "surface-container-low": "#1a1c20",
+                        "tertiary": "#fff8f3",
+                        "inverse-on-surface": "#2f3035",
+                        "secondary-container": "#4a8eff",
+                        "primary": "#efffe3",
+                        "on-tertiary-fixed": "#261a00",
+                        "secondary-fixed": "#d8e2ff",
+                        "surface-container-highest": "#333539",
+                        "surface-tint": "#2ae500",
+                        "surface-bright": "#37393e",
+                        "on-secondary-fixed-variant": "#004493",
+                        "on-tertiary-fixed-variant": "#5c4300",
+                        "primary-container": "#39ff14",
+                        "outline": "#85967c",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#106e00",
+                        "tertiary-container": "#ffd88a",
+                        "on-surface": "#e2e2e8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "unit": "4px",
+                        "margin-desktop": "40px",
+                        "container-max": "1440px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Sora"],
+                        "headline-md": ["Sora"],
+                        "headline-lg-mobile": ["Sora"],
+                        "display-lg": ["Sora"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+    </script>
+<style>
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            background-color: #111318;
+            color: #e2e2e8;
             overflow-x: hidden;
-            background-image:
-                radial-gradient(circle at 10% 20%, rgba(2, 150, 118, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 80% 80%, rgba(9, 137, 177, 0.08) 0%, transparent 40%);
         }
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            background: rgba(11, 15, 25, 0.8);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--card-border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .logo-section h1 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.4rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--text-primary) 30%, var(--accent-lime) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .logo-section p { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
-        .header-badges { display: flex; gap: 0.75rem; align-items: center; }
-        .status-badge {
-            background: rgba(2, 150, 118, 0.15);
-            border: 1px solid var(--accent-teal);
-            color: #10b981;
-            padding: 0.3rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .status-badge::before {
-            content: '';
-            display: inline-block;
-            width: 7px; height: 7px;
-            background: #10b981;
-            border-radius: 50%;
-            box-shadow: 0 0 6px #10b981;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-        main {
-            flex: 1;
-            padding: 1.5rem 2rem;
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 1.5rem;
-            max-width: 1800px;
-            margin: 0 auto;
-            width: 100%;
-        }
-        .dashboard-left { display: flex; flex-direction: column; gap: 1.25rem; }
-        .glass-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid var(--card-border);
-            border-radius: 14px;
-            padding: 1.25rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .glass-card:hover {
-            border-color: rgba(138, 184, 83, 0.2);
-            box-shadow: 0 12px 40px 0 rgba(138, 184, 83, 0.07);
-            transform: translateY(-1px);
+        
+        .glass-panel {
+            background: linear-gradient(135deg, rgba(30, 32, 36, 0.4) 0%, rgba(30, 32, 36, 0.1) 100%);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        /* KPI Grid - 4 cols per row */
-        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
-        .kpi-card { padding: 1rem; }
-        .kpi-title { font-size: 0.72rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.4rem; }
-        .kpi-value { font-size: 1.65rem; font-weight: 700; font-family: 'Outfit', sans-serif; color: var(--text-primary); line-height: 1.2; }
-        .kpi-sub { font-size: 0.7rem; margin-top: 0.35rem; font-weight: 500; }
-        .kpi-sub.green { color: var(--accent-lime); }
-        .kpi-sub.teal { color: var(--accent-teal); }
-        .kpi-sub.cyan { color: var(--accent-cyan); }
-        .kpi-sub.orange { color: var(--accent-orange); }
-        .kpi-sub.red { color: var(--accent-red); }
-
-        /* Charts 2x2 grid */
-        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-        .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .chart-header h3 { font-family: 'Outfit', sans-serif; font-size: 1rem; font-weight: 600; color: var(--text-primary); }
-        .chart-tag {
-            font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
-            padding: 2px 8px; border-radius: 99px;
+        .glow-effect {
+            box-shadow: 0 0 15px rgba(42, 229, 0, 0.15);
         }
-        .chart-tag.ml { background: rgba(138, 184, 51, 0.15); color: var(--accent-lime); border: 1px solid rgba(138, 184, 51, 0.35); }
-        .chart-tag.ai { background: rgba(9, 137, 177, 0.15); color: var(--accent-cyan); border: 1px solid rgba(9, 137, 177, 0.35); }
-        .chart-tag.thermal { background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-        .chart-tag.grid { background: rgba(245, 158, 11, 0.12); color: var(--accent-orange); border: 1px solid rgba(245, 158, 11, 0.3); }
-        .chart-canvas-wrapper { position: relative; height: 220px; width: 100%; }
-
-        /* SCB Table */
-        .scb-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.25rem; }
-        .scb-table th, .scb-table td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--card-border); }
-        .scb-table th { color: var(--text-secondary); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; }
-        .badge-alert { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
-        .badge-success { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
-
-        /* Bottom Row: SCB + O&M Summary */
-        .bottom-row { display: grid; grid-template-columns: 1fr 1.5fr; gap: 1.25rem; }
-
-        /* Chat Panel */
-        .chat-panel {
-            display: flex; flex-direction: column;
-            height: calc(100vh - 100px);
-            position: sticky; top: 80px;
-        }
-        .chat-header-section { border-bottom: 1px solid var(--card-border); padding-bottom: 0.85rem; margin-bottom: 0.85rem; }
-        .chat-header-section h2 { font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
-        .chat-header-section p { font-size: 0.75rem; color: var(--text-secondary); }
-        .chat-messages {
-            flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.85rem;
-            padding-right: 0.4rem; margin-bottom: 0.85rem;
-        }
-        .chat-messages::-webkit-scrollbar { width: 4px; }
-        .chat-messages::-webkit-scrollbar-track { background: transparent; }
-        .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 999px; }
-        .message { display: flex; flex-direction: column; max-width: 88%; padding: 0.75rem 0.9rem; border-radius: 11px; font-size: 0.85rem; line-height: 1.5; }
-        .message.user { background: rgba(9,137,177,0.15); border: 1px solid rgba(9,137,177,0.3); color: var(--text-primary); align-self: flex-end; border-bottom-right-radius: 2px; }
-        .message.agent { background: rgba(20,28,47,0.6); border: 1px solid var(--card-border); color: var(--text-primary); align-self: flex-start; border-bottom-left-radius: 2px; }
-        .thoughts-container { font-family: monospace; background: rgba(0,0,0,0.3); border-left: 2px solid var(--accent-lime); padding: 0.4rem 0.65rem; margin-bottom: 0.6rem; font-size: 0.7rem; color: var(--accent-lime); border-radius: 4px; }
-        .thought-line { margin-bottom: 2px; }
-        .quick-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.75rem; }
-        .quick-btn {
-            background: rgba(255,255,255,0.03); border: 1px solid var(--card-border); color: var(--text-secondary);
-            padding: 0.35rem 0.7rem; border-radius: 7px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s; font-weight: 500;
-        }
-        .quick-btn:hover { background: rgba(138,184,51,0.1); color: var(--text-primary); border-color: rgba(138,184,51,0.4); }
-        .chat-input-wrapper {
-            display: flex; gap: 0.6rem; background: rgba(11,15,25,0.6); border: 1px solid var(--card-border); padding: 0.4rem; border-radius: 11px;
-        }
-        .chat-input-wrapper:focus-within { border-color: rgba(138,184,51,0.5); box-shadow: 0 0 8px rgba(138,184,51,0.15); }
-        .chat-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text-primary); font-family: inherit; font-size: 0.85rem; padding: 0.4rem; }
-        .send-btn { background: var(--accent-lime); border: none; color: #0b0f19; padding: 0.4rem 1.1rem; border-radius: 7px; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
-        .send-btn:hover { background: #9dcc3d; box-shadow: 0 0 10px rgba(138,184,51,0.4); }
-
-        /* Markdown */
-        .markdown-content h1,.markdown-content h2,.markdown-content h3 { font-family:'Outfit',sans-serif; margin: 0.6rem 0 0.4rem; }
-        .markdown-content h1 { font-size: 1.1rem; } .markdown-content h2 { font-size: 1rem; } .markdown-content h3 { font-size: 0.9rem; }
-        .markdown-content p { margin-bottom: 0.4rem; font-size: 0.82rem; color: #d1d5db; }
-        .markdown-content ul { margin-left: 1.1rem; margin-bottom: 0.4rem; font-size: 0.82rem; }
-        .markdown-content li { margin-bottom: 2px; }
-        .markdown-content code { font-family: monospace; background: rgba(255,255,255,0.08); padding: 1px 4px; border-radius: 4px; }
-        .markdown-content pre { background: rgba(0,0,0,0.4); border: 1px solid var(--card-border); padding: 0.65rem; border-radius: 8px; overflow-x: auto; margin: 0.4rem 0; }
-        .markdown-content pre code { background: transparent; padding: 0; font-size: 0.75rem; }
-
-        /* Tooltip Container */
-        .info-container {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-left: 6px;
-            cursor: pointer;
-            z-index: 10;
-        }
-        .info-icon {
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            border: 1px solid var(--text-secondary);
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 9px;
-            font-weight: 700;
-            font-family: serif;
-            transition: all 0.2s ease;
-        }
-        .info-container:hover .info-icon {
-            border-color: var(--accent-lime);
-            color: var(--accent-lime);
-            box-shadow: 0 0 6px rgba(138, 184, 51, 0.4);
-        }
-        .tooltip-text {
-            visibility: hidden;
-            width: 240px;
-            background-color: #111827;
-            color: #d1d5db;
-            text-align: left;
-            border: 1px solid var(--card-border);
-            border-radius: 6px;
-            padding: 0.75rem;
-            position: absolute;
-            z-index: 1000;
-            right: 0;
-            top: 24px;
-            opacity: 0;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-            transform: translateY(4px);
-            font-size: 0.72rem;
-            line-height: 1.4;
-            font-weight: 400;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
-            white-space: normal;
-        }
-        .info-container:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-            transform: translateY(0);
+        
+        .glow-text {
+            text-shadow: 0 0 10px rgba(42, 229, 0, 0.5);
         }
 
-        /* Tabs Styling */
-        .tabs-header {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid var(--card-border);
-            padding-bottom: 0.5rem;
+        /* Custom Scrollbar for Chat */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
         }
-        .tab-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            padding: 0.4rem 0.85rem;
-            border-radius: 6px;
-            transition: all 0.2s;
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
         }
-        .tab-btn.active {
-            color: var(--accent-lime);
-            background: rgba(138, 184, 51, 0.1);
-            border: 1px solid rgba(138, 184, 51, 0.25);
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
         }
-        .tab-content {
-            display: none;
+        
+        /* Simple chart animations */
+        @keyframes drawLine {
+            to { stroke-dashoffset: 0; }
         }
-        .tab-content.active {
-            display: block;
+        .animate-line {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawLine 2s ease-out forwards;
         }
-
-        /* Progress Bar Styling */
-        .progress-bar-container {
-            width: 100%;
-            background: rgba(255, 255, 255, 0.05);
-            height: 10px;
-            border-radius: 999px;
-            overflow: hidden;
-            margin: 0.5rem 0;
-            border: 1px solid var(--card-border);
+        
+        @keyframes fillUp {
+            from { height: 0; }
         }
-        .progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, var(--accent-green), var(--accent-orange));
-            width: 0%;
-            transition: width 0.5s ease-out;
+        .animate-bar {
+            transform-origin: bottom;
+            animation: fillUp 1s ease-out forwards;
         }
-
-        /* Toast Container */
-        #toast-container {
-            position: fixed;
-            top: 80px;
-            right: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 9999;
-        }
-        .toast {
-            background: rgba(11, 15, 25, 0.95);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(245, 158, 11, 0.4);
-            border-left: 4px solid var(--accent-orange);
-            color: var(--text-primary);
-            padding: 0.85rem 1.25rem;
-            border-radius: 8px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-            font-size: 0.78rem;
-            min-width: 300px;
-            max-width: 400px;
-            transform: translateX(120%);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .toast.show {
-            transform: translateX(0);
-        }
-        .toast.error-toast {
-            border-color: rgba(239, 68, 68, 0.4);
-            border-left-color: var(--accent-red);
-        }
-        .toast-header {
-            display: flex;
-            justify-content: space-between;
-            font-weight: 700;
-            margin-bottom: 0.25rem;
-        }
-        .toast-close {
-            cursor: pointer;
-            color: var(--text-secondary);
-        }
-
-        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body>
-    <header>
-        <div class="logo-section">
-            <h1>JioSunGenie eAnalytiX</h1>
-            <p>AI-Powered Plant Optimizer &bull; Jamnagar Solar Facility</p>
-        </div>
-        <div class="header-badges">
-            <select id="timeframe-select" onchange="onTimeframeChange()" style="
-                background: rgba(20, 28, 47, 0.7);
-                border: 1px solid var(--card-border);
-                color: var(--text-primary);
-                padding: 0.35rem 0.85rem;
-                border-radius: 8px;
-                font-size: 0.75rem;
-                font-weight: 600;
-                outline: none;
-                cursor: pointer;
-            ">
-                <option value="live">Live (All Data)</option>
-                <option value="today">Today (June 24)</option>
-                <option value="yesterday">Yesterday (June 23/24)</option>
-                <option value="week">Last 7 Days</option>
-                <option value="custom">Custom Range</option>
-            </select>
-            <div id="custom-range-inputs" style="display: none; align-items: center; gap: 8px;">
-                <input type="date" id="start-date" onchange="onCustomDateChange()" style="background: rgba(20, 28, 47, 0.7); border: 1px solid var(--card-border); color: var(--text-primary); padding: 0.3rem 0.5rem; border-radius: 6px; font-size: 0.7rem;">
-                <input type="date" id="end-date" onchange="onCustomDateChange()" style="background: rgba(20, 28, 47, 0.7); border: 1px solid var(--card-border); color: var(--text-primary); padding: 0.3rem 0.5rem; border-radius: 6px; font-size: 0.7rem;">
-            </div>
-            <div id="window-indicator" class="status-badge" style="font-size: 0.68rem;">Window: All data</div>
-            <div class="status-badge" style="background: rgba(9,137,177,0.15); border-color: rgba(9,137,177,0.4); color: var(--accent-cyan);">WMS: Active</div>
-            <div class="status-badge">Plant Online</div>
-        </div>
-    </header>
-
-    <main>
-        <div class="dashboard-left">
-
-            <!-- KPI Row 1: Generation & PR -->
-            <div class="kpi-grid">
-                <div class="glass-card kpi-card">
-                    <div class="kpi-title">Expected vs Actual</div>
-                    <div id="kpi-gen" class="kpi-value">--- / ---</div>
-                    <div id="kpi-gen-sub" class="kpi-sub green">Gap: --- kWh</div>
-                </div>
-                <div class="glass-card kpi-card">
-                    <div class="kpi-title">Performance Ratio</div>
-                    <div id="kpi-pr" class="kpi-value">0.---</div>
-                    <div class="kpi-sub teal">Target: 0.85</div>
-                </div>
-                <div class="glass-card kpi-card">
-                    <div class="kpi-title">Inverter Efficiency</div>
-                    <div id="kpi-eff" class="kpi-value">--.- %</div>
-                    <div id="kpi-eff-sub" class="kpi-sub cyan">Fleet Average</div>
-                </div>
-                <div class="glass-card kpi-card">
-                    <div class="kpi-title">Plant Availability</div>
-                    <div id="kpi-avail" class="kpi-value">--.- %</div>
-                    <div id="kpi-avail-sub" class="kpi-sub orange">Curtailment: -- h</div>
-                </div>
-            </div>
-
-            <!-- KPI Row 2: BESS, Soiling, Thermal, Irradiance -->
-            <div class="kpi-grid">
-                <div class="glass-card kpi-card">
-                    <div class="kpi-title">BESS Health (SoH)</div>
-                    <div id="kpi-bess" class="kpi-value">--.- %</div>
-                    <div id="kpi-bess-sub" class="kpi-sub green">Cycles: --</div>
-                </div>
-                <div class="glass-card kpi-card">
-                    <div class="kpi-title">Daily Soiling Rate</div>
-                    <div id="kpi-soiling" class="kpi-value">-.--- %</div>
-                    <div id="kpi-soiling-sub" class="kpi-sub red">Loss Trend</div>
-                </div>
-                <div class="glass-card kpi-card">
-                    <div class="kpi-title">Thermal Anomalies</div>
-                    <div id="kpi-thermal" class="kpi-value">--</div>
-                    <div id="kpi-thermal-sub" class="kpi-sub orange">Max Delta: -- °C</div>
-                </div>
-                <div class="glass-card kpi-card">
-                    <div class="kpi-title">Irradiance R²</div>
-                    <div id="kpi-r2" class="kpi-value">0.---</div>
-                    <div id="kpi-r2-sub" class="kpi-sub teal">POA Correlation</div>
-                </div>
-            </div>
-
-            <!-- Tabbed Main Analytics Section -->
-            <div class="tabs-header">
-                <button id="tab-btn-diagnostics" class="tab-btn active" onclick="switchTab('diagnostics')">Telemetry & Diagnostics</button>
-                <button id="tab-btn-forecast" class="tab-btn" onclick="switchTab('forecast')">Day-Ahead Forecast & BESS Dispatch</button>
-            </div>
-
-            <!-- Tab 1 Content: Original 4 Charts -->
-            <div id="tab-diagnostics" class="tab-content active">
-                <div class="charts-grid">
-                    <!-- Chart 1: PR Gap Bar -->
-                    <div class="glass-card">
-                        <div class="chart-header">
-                            <h3>PR Gap Loss Attribution</h3>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="chart-tag ml">ML Model</span>
-                                <div class="info-container">
-                                    <div class="info-icon">i</div>
-                                    <div class="tooltip-text">Calculates expected vs actual generation and attributes the gap to soiling, shading, hardware inefficiency, and grid curtailment.</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="chart-canvas-wrapper"><canvas id="prGapChart"></canvas></div>
-                    </div>
-                    <!-- Chart 2: Inverter Efficiency Curve -->
-                    <div class="glass-card">
-                        <div class="chart-header">
-                            <h3>Inverter Efficiency Curve</h3>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="chart-tag ai">Load Analysis</span>
-                                <div class="info-container">
-                                    <div class="info-icon">i</div>
-                                    <div class="tooltip-text">Aggregates inverter DC-AC conversion efficiency across different load factor bins (0-10% to 90-100%).</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="chart-canvas-wrapper"><canvas id="effCurveChart"></canvas></div>
-                    </div>
-                    <!-- Chart 3: Irradiance-Power Scatter -->
-                    <div class="glass-card">
-                        <div class="chart-header">
-                            <h3>Irradiance vs Power Output</h3>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="chart-tag ai">Correlation</span>
-                                <div class="info-container">
-                                    <div class="info-icon">i</div>
-                                    <div class="tooltip-text">Plots Plane-of-Array (POA) irradiance against plant output power. Red dots show inverter power clipping; dashed line shows linear target.</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="chart-canvas-wrapper"><canvas id="irradianceChart"></canvas></div>
-                    </div>
-                    <!-- Chart 4: Operating State Breakdown -->
-                    <div class="glass-card">
-                        <div class="chart-header">
-                            <h3>Operating State Breakdown</h3>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="chart-tag grid">Grid Analysis</span>
-                                <div class="info-container">
-                                    <div class="info-icon">i</div>
-                                    <div class="tooltip-text">Categorizes the plant's operating states (Running, Grid Curtailment, Fault/Trip, Nighttime, Standby, Maintenance) during daylight hours.</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="chart-canvas-wrapper"><canvas id="curtailmentChart"></canvas></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tab 2 Content: Day-Ahead BESS Forecast -->
-            <div id="tab-forecast" class="tab-content">
-                <div class="glass-card" style="margin-bottom: 1rem;">
-                    <div class="chart-header">
-                        <h3>24-Hour Day-Ahead &amp; Battery Dispatch Forecast</h3>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span class="chart-tag ai">BESS Dispatch</span>
-                            <div class="info-container">
-                                <div class="info-icon">i</div>
-                                <div class="tooltip-text">Simulates day-ahead solar GHI/POA generation and computes optimized battery dispatch scheduling for peak shaving and load support.</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="chart-canvas-wrapper" style="height: 280px;"><canvas id="forecastChart"></canvas></div>
-                </div>
-            </div>
-
-            <!-- Bottom Row: SCB Table + Soiling ROI + Actions Panel -->
-            <div class="bottom-row" style="grid-template-columns: 1.1fr 1fr 1.3fr;">
-                <div class="glass-card">
-                    <div class="chart-header">
-                        <h3>String Combiner (SCB) Outliers</h3>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span class="chart-tag thermal">Z-Score</span>
-                            <div class="info-container">
-                                <div class="info-icon">i</div>
-                                <div class="tooltip-text">Flags underperforming solar strings by calculating Z-scores of SCB currents. A Z-score below -2.0 indicates an anomaly.</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="overflow-y: auto; max-height: 180px;">
-                        <table class="scb-table" id="scb-outliers-table">
-                            <thead><tr><th>String</th><th>Current (A)</th><th>Z-Score</th><th>Status</th></tr></thead>
-                            <tbody><tr><td colspan="4" style="text-align:center;color:var(--text-secondary);">Loading...</td></tr></tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div class="glass-card">
-                    <div class="chart-header">
-                        <h3>Soiling ROI Planner</h3>
-                        <span class="chart-tag ml">Cleaning ROI</span>
-                    </div>
-                    <div style="font-size: 0.75rem; line-height: 1.5; color: var(--text-secondary);">
-                        <div style="display:flex; justify-content:space-between;"><span>Last Washed:</span><span id="roi-last-clean" style="color:var(--text-primary); font-weight:600;">---</span></div>
-                        <div style="display:flex; justify-content:space-between; margin-top:2px;"><span>Days Elapsed:</span><span id="roi-days-elapsed" style="color:var(--text-primary); font-weight:600;">---</span></div>
-                        <div style="margin-top: 6px; font-size: 0.8rem; display:flex; justify-content:space-between;"><span>Cumulative Loss:</span><span id="roi-loss-inr" style="color:var(--accent-orange); font-weight:700;">₹---</span></div>
-                        <div class="progress-bar-container">
-                            <div id="roi-progress-bar" class="progress-bar"></div>
-                        </div>
-                        <div style="font-size: 0.65rem; display:flex; justify-content:space-between; margin-bottom: 6px; margin-top:-2px;">
-                            <span>Clean Status</span>
-                            <span>Threshold: ₹15,000</span>
-                        </div>
-                        <div id="roi-recommendation" style="font-size: 0.72rem; font-weight:600; padding: 0.35rem; border-radius: 6px; text-align:center; background:rgba(255,255,255,0.03);">
-                            Loading ROI analysis...
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-card">
-                    <div class="chart-header">
-                        <h3>O&M Recommendations &amp; Reports</h3>
-                        <span class="chart-tag grid">Reporting</span>
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <div id="om-summary-box" style="font-size: 0.72rem; line-height: 1.5; color: var(--text-secondary); max-height: 100px; overflow-y:auto;">
-                            Loading diagnostics...
-                        </div>
-                        <div style="border-top: 1px solid var(--card-border); padding-top: 8px; display: flex; gap: 8px; align-items: center;">
-                            <select id="report-format-select" style="background: rgba(20, 28, 47, 0.7); border:1px solid var(--card-border); color:var(--text-primary); padding: 0.3rem 0.5rem; border-radius: 6px; font-size: 0.72rem; outline:none; cursor:pointer;">
-                                <option value="csv">CSV Spreadsheet</option>
-                                <option value="html">HTML Webpage</option>
-                            </select>
-                            <button onclick="downloadReport()" style="flex: 1; background: var(--accent-lime); border: none; color: #0b0f19; padding: 0.4rem; border-radius: 6px; font-weight: 700; font-size: 0.72rem; cursor: pointer; transition: all 0.2s;">
-                                Generate &amp; Download
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Alerts Toast Container -->
-        <div id="toast-container"></div>
-
-        <!-- Right Chat Panel -->
-        <div class="glass-card chat-panel">
-            <div class="chat-header-section">
-                <h2>Ask JioSunGenie AI</h2>
-                <p>Telemetry-calibrated O&M Engineering Assistant</p>
-            </div>
-            <div class="chat-messages" id="chat-box">
-                <div class="message agent">
-                    <div class="markdown-content">
-                        Hello! I am your SunGenie AI. I have compiled the Jamnagar telemetry DB and calibrated <strong>8 ML pipelines</strong>: PR Gap, SCB String Outliers, Soiling Rate, BESS SoH, Inverter Efficiency, Irradiance Correlation, Thermal Anomaly, and Grid Curtailment.
-                        <br><br>Use the quick-actions or type any query.
-                    </div>
-                </div>
-            </div>
-
-            <div class="quick-actions">
-                <button class="quick-btn" onclick="sendQ('What is the overall generation performance and PR gap breakdown for the plant?')">PR Gap Breakdown</button>
-                <button class="quick-btn" onclick="sendQ('Are there any underperforming strings on Inverter B1INV1?')">String Outlier Check</button>
-                <button class="quick-btn" onclick="sendQ('What is the health and cycle count of battery B1BCT1?')">Battery Health</button>
-                <button class="quick-btn" onclick="sendQ('What is the inverter fleet DC-AC conversion efficiency across different load levels?')">Inverter Efficiency</button>
-                <button class="quick-btn" onclick="sendQ('How well does the plant output correlate with irradiance? Are there clipping or soiling events?')">Irradiance Analysis</button>
-                <button class="quick-btn" onclick="sendQ('Are there any thermal anomalies or hotspot risks in the module temperature data?')">Thermal Anomalies</button>
-                <button class="quick-btn" onclick="sendQ('What is the plant availability and how many grid curtailment events have occurred?')">Grid Curtailment</button>
-                <button class="quick-btn" onclick="sendQ('SELECT timestamp, ambientTemperature, planeOfArraySensor01 FROM telemetry WHERE device_group=\\'WEATHER\\' ORDER BY timestamp DESC LIMIT 5')">SQL: Weather Data</button>
-            </div>
-
-            <div class="chat-input-wrapper">
-                <input type="text" class="chat-input" id="user-input" placeholder="Ask about plant performance, anomalies, or run SQL..." onkeypress="handleKey(event)">
-                <button class="send-btn" onclick="sendMessage()">Send</button>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        let charts = {};
-        let activeTimeframe = 'live';
-        let customStart = '';
-        let customEnd = '';
-        let displayedAlerts = new Set();
-        let dataRange = null;        // {min_timestamp, max_timestamp, latest_date, record_count} from /api/data_range
-        let backendOnline = null;    // true once /api/data_range responds; false if unreachable (static/offline)
-
-        function onTimeframeChange() {
-            const select = document.getElementById('timeframe-select');
-            activeTimeframe = select.value;
-            const customInputs = document.getElementById('custom-range-inputs');
-            if (activeTimeframe === 'custom') {
-                customInputs.style.display = 'inline-flex';
-            } else {
-                customInputs.style.display = 'none';
-                fetchAll();
-            }
-        }
-
-        function onCustomDateChange() {
-            customStart = document.getElementById('start-date').value;
-            customEnd = document.getElementById('end-date').value;
-            if (customStart && customEnd) {
-                fetchAll();
-            }
-        }
-
-        function fmtAddDays(dateStr, delta) {
-            const d = new Date(dateStr + 'T00:00:00');
-            d.setDate(d.getDate() + delta);
-            return d.toISOString().slice(0, 10);
-        }
-
-        function getTimeframeParams() {
-            let start = '';
-            let end = '';
-            // Anchor relative presets to the REAL latest data date when known, so
-            // selections aren't frozen to a hardcoded month and map to actual data.
-            const latest = (dataRange && dataRange.latest_date) ? dataRange.latest_date : "2026-06-24";
-            if (activeTimeframe === 'today') {
-                start = `${latest} 00:00:00`;
-                end = `${latest} 23:59:59`;
-            } else if (activeTimeframe === 'yesterday') {
-                const y = fmtAddDays(latest, -1);
-                start = `${y} 00:00:00`;
-                end = `${y} 23:59:59`;
-            } else if (activeTimeframe === 'week') {
-                const s = fmtAddDays(latest, -6);
-                start = `${s} 00:00:00`;
-                end = `${latest} 23:59:59`;
-            } else if (activeTimeframe === 'custom') {
-                if (customStart && customEnd) {
-                    start = `${customStart} 00:00:00`;
-                    end = `${customEnd} 23:59:59`;
-                }
-            }
-            return { start, end };
-        }
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            document.getElementById(`tab-btn-${tabId}`).classList.add('active');
-            document.getElementById(`tab-${tabId}`).classList.add('active');
-            
-            fetchAll();
-        }
-
-        function showToast(severity, message, assetId) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${severity === 'Critical' ? 'error-toast' : ''}`;
-            toast.innerHTML = `
-                <div class="toast-header">
-                    <span>${severity.toUpperCase()}: ${assetId.split('_').pop()}</span>
-                    <span class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</span>
-                </div>
-                <div>${message}</div>
-            `;
-            container.appendChild(toast);
-            setTimeout(() => toast.classList.add('show'), 100);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 6000);
-        }
-
-        function checkAlerts(alerts) {
-            alerts.forEach(alert => {
-                const key = alert.timestamp + alert.message;
-                if (!displayedAlerts.has(key)) {
-                    displayedAlerts.add(key);
-                    showToast(alert.severity, alert.message, alert.asset_id);
-                }
-            });
-        }
-
-        function downloadReport() {
-            const { start, end } = getTimeframeParams();
-            const format = document.getElementById('report-format-select').value;
-            let url = `/api/generate_report?format=${format}`;
-            if (start && end) {
-                url += `&start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}`;
-            }
-            window.open(withKey(url), '_blank');
-        }
-
-        async function fetchSafe(url, defaultVal) {
-            try {
-                const r = await fetch(url, { headers: apiHeaders() });
-                if (!r.ok) {
-                    console.warn(`Endpoint ${url} returned status ${r.status}, using fallbacks.`);
-                    return defaultVal;
-                }
-                const data = await r.json();
-                if (data && data.error) {
-                    console.warn(`Endpoint ${url} returned error: ${data.error}, using fallbacks.`);
-                    return defaultVal;
-                }
-                return data || defaultVal;
-            } catch (err) {
-                console.warn(`Failed to fetch ${url}, using fallbacks:`, err);
-                return defaultVal;
-            }
-        }
-
-        // Number of days covered by the selected window ('live' ≈ full dataset span).
-        function windowDays(start, end) {
-            if (!start || !end) {
-                if (dataRange && dataRange.earliest_date && dataRange.latest_date) {
-                    return Math.max(1, Math.round(
-                        (new Date(dataRange.latest_date) - new Date(dataRange.earliest_date)) / 86400000) + 1);
-                }
-                return 31;
-            }
-            const s = new Date(start.replace(' ', 'T'));
-            const e = new Date(end.replace(' ', 'T'));
-            return Math.max(1, Math.round((e - s) / 86400000) + 1);
-        }
-
-        // Deterministic per-window jitter so each selection yields distinct-but-stable demo numbers.
-        function windowJitter(start, end) {
-            const str = (start || 'live') + '|' + (end || '');
-            let h = 0;
-            for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
-            return 1 + (((h % 1000) / 1000) - 0.5) * 0.06; // ±3%
-        }
-
-        // Window-varying demo data used when the backend is unreachable (static hosting / offline),
-        // so date selection visibly changes the dashboard even with no API. Shapes match the API.
-        function demoData(start, end) {
-            const days = windowDays(start, end);
-            const j = windowJitter(start, end);
-            const expected = Math.round(8140 * days * j);
-            const actual = Math.round(5628 * days * j);
-            const gap = Math.max(0, expected - actual);
-            const latest = (dataRange && dataRange.latest_date) ? dataRange.latest_date : "2026-06-24";
-            return {
-                prGap: {
-                    actual_kwh: actual, expected_kwh: expected, gap_kwh: gap,
-                    pr_actual: +(actual / expected).toFixed(4),
-                    attribution: {
-                        "Soiling": Math.round(gap * 0.45), "Shading": Math.round(gap * 0.05),
-                        "Hardware Inefficiency": Math.round(gap * 0.25), "Grid Curtailment": Math.round(gap * 0.25)
-                    }
-                },
-                bess: { state_of_health_pct: +(99.4 * (2 - j)).toFixed(1), total_cycles: Math.max(1, Math.round(12 * days / 31)),
-                        coulombic_efficiency: 0.98, bess_id: 'JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1', status: 'Healthy' },
-                soiling: { avg_daily_soiling_rate_pct: +(-0.22 * j).toFixed(2),
-                           inferred_cleaning_dates: days > 7 ? ["2026-06-12", "2026-06-25"] : ["2026-06-25"] },
-                scb: { underperforming_strings: {}, normal_strings_count: 16, mean_current: +(8.5 * j).toFixed(2), std_dev: 0.4 },
-                eff: { fleet_avg_efficiency_pct: +(95.6 * (2 - j)).toFixed(1), underperforming_inverters: [],
-                    fleet_curve: [
-                        {"load_bin": "0-10%", "avg_efficiency_pct": 87.2}, {"load_bin": "10-20%", "avg_efficiency_pct": 91.5},
-                        {"load_bin": "20-30%", "avg_efficiency_pct": 94.1}, {"load_bin": "30-40%", "avg_efficiency_pct": 95.3},
-                        {"load_bin": "40-50%", "avg_efficiency_pct": 95.8}, {"load_bin": "50-60%", "avg_efficiency_pct": 96.1},
-                        {"load_bin": "60-70%", "avg_efficiency_pct": 96.2}, {"load_bin": "70-80%", "avg_efficiency_pct": 96.2},
-                        {"load_bin": "80-90%", "avg_efficiency_pct": 96.0}, {"load_bin": "90-100%", "avg_efficiency_pct": 95.8}
-                    ] },
-                irr: { correlation_r2: +(0.912 * (2 - j)).toFixed(3), anomaly_flag: 'Normal',
-                    scatter_data: [
-                        {"poa": 100, "actual_kw": 800, "expected_kw": 850, "clipping": false},
-                        {"poa": 300, "actual_kw": 2500, "expected_kw": 2550, "clipping": false},
-                        {"poa": 500, "actual_kw": 4150, "expected_kw": 4250, "clipping": false},
-                        {"poa": 700, "actual_kw": 5850, "expected_kw": 5950, "clipping": false},
-                        {"poa": 900, "actual_kw": 7350, "expected_kw": 7650, "clipping": true},
-                        {"poa": 1000, "actual_kw": 7400, "expected_kw": 8500, "clipping": true}
-                    ] },
-                thermal: { anomaly_count: Math.round(2 * days / 31), max_delta_c: +(5.2 * j).toFixed(1), status: 'Normal',
-                    daily_thermal_profile: [
-                        {"date": fmtAddDays(latest, -4), "avg_delta_c": 4.1}, {"date": fmtAddDays(latest, -3), "avg_delta_c": 4.3},
-                        {"date": fmtAddDays(latest, -2), "avg_delta_c": 4.5}, {"date": fmtAddDays(latest, -1), "avg_delta_c": 4.8},
-                        {"date": latest, "avg_delta_c": 5.2}
-                    ] },
-                curt: { plant_availability_pct: +(99.93 * (2 - j)).toFixed(2), total_curtailment_hours: +(4.5 * days / 31).toFixed(1),
-                    total_fault_hours: 0.0,
-                    category_breakdown_hours: {"Running": +(120.5 * days / 31).toFixed(1), "Grid Curtailment": +(4.5 * days / 31).toFixed(1),
-                        "Fault/Trip": 0.0, "Nighttime": +(108.0 * days / 31).toFixed(1), "Standby": +(7.0 * days / 31).toFixed(1), "Scheduled Maintenance": 0.0},
-                    estimated_curtailed_kwh: Math.round(38916 * days / 31) },
-                alerts: [{timestamp: `${latest} 11:20:00`, asset_id: "JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", severity: "Warning", message: "BESS Cell voltage imbalance warning", status: "Active"}],
-                roi: { last_cleaning_date: "2026-06-12", days_since_last_cleaning: days, cumulative_loss_kwh: Math.round(100 * days),
-                    cumulative_loss_inr: Math.round(450 * days), daily_loss_kwh: 100.0, daily_loss_inr: 450.0,
-                    tipping_point_days: 22, days_remaining: Math.max(0, 22 - days), cleaning_recommended: days >= 22,
-                    optimal_cleaning_date: fmtAddDays("2026-06-12", 22), roi_pct: days >= 22 ? +((days - 22) * 3).toFixed(1) : 0.0, cleaning_cost: 15000.0 },
-                forecast: [
-                    {hour: "08:00", predicted_generation_kw: 150, bess_charge_discharge_kw: 0, bess_soc_pct: 20},
-                    {hour: "10:00", predicted_generation_kw: 1200, bess_charge_discharge_kw: 500, bess_soc_pct: 25},
-                    {hour: "12:00", predicted_generation_kw: 4500, bess_charge_discharge_kw: 2000, bess_soc_pct: 45},
-                    {hour: "14:00", predicted_generation_kw: 5200, bess_charge_discharge_kw: 2000, bess_soc_pct: 65},
-                    {hour: "16:00", predicted_generation_kw: 2100, bess_charge_discharge_kw: 0, bess_soc_pct: 65},
-                    {hour: "18:00", predicted_generation_kw: 100, bess_charge_discharge_kw: -1000, bess_soc_pct: 55},
-                    {hour: "20:00", predicted_generation_kw: 0, bess_charge_discharge_kw: -2000, bess_soc_pct: 35},
-                    {hour: "22:00", predicted_generation_kw: 0, bess_charge_discharge_kw: -1500, bess_soc_pct: 20}
-                ]
-            };
-        }
-
-        // Probe the backend and cache the real data window. Sets backendOnline.
-        async function refreshDataRange() {
-            try {
-                const r = await fetch('/api/data_range', { headers: apiHeaders() });
-                if (r.ok) {
-                    const j = await r.json();
-                    if (j && !j.error) { dataRange = j; backendOnline = true; return; }
-                }
-                backendOnline = false;
-            } catch (e) {
-                backendOnline = false;
-            }
-        }
-
-        // Header badge: shows the active window and whether data is live or demo.
-        function updateWindowIndicator(start, end) {
-            const el = document.getElementById('window-indicator');
-            if (!el) return;
-            const rangeTxt = (start && end) ? `${start.slice(0, 10)} → ${end.slice(0, 10)}` : 'All data';
-            if (backendOnline) {
-                const recs = (dataRange && dataRange.record_count) ? ` · ${dataRange.record_count.toLocaleString()} rec` : '';
-                el.textContent = `Window: ${rangeTxt} · Live${recs}`;
-                el.style.color = 'var(--accent-green, #8ab833)';
-            } else {
-                el.textContent = `Window: ${rangeTxt} · Demo data (API offline)`;
-                el.style.color = '#f59e0b';
-            }
-        }
-
-        async function fetchAll() {
-            const { start, end } = getTimeframeParams();
-            const queryParams = (start && end) ? `?start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}` : '';
-            await refreshDataRange();
-            updateWindowIndicator(start, end);
-
-            try {
-                let [prData, bessData, soilingData, scbData, effData, irrData, thermalData, curtData, alertsData, roiData, forecastData] = await Promise.all([
-                    fetchSafe(`/api/pr_gap${queryParams}`, {
-                        actual_kwh: 5628,
-                        expected_kwh: 8140,
-                        gap_kwh: 2512,
-                        pr_actual: 0.7788,
-                        attribution: {"Soiling": 1130.4, "Shading": 125.6, "Hardware Inefficiency": 628.0, "Grid Curtailment": 628.0}
-                    }),
-                    fetchSafe(`/api/bess_health${queryParams}`, {
-                        state_of_health_pct: 99.4,
-                        total_cycles: 12,
-                        coulombic_efficiency: 0.98,
-                        bess_id: 'JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1',
-                        status: 'Healthy'
-                    }),
-                    fetchSafe(`/api/soiling_rate${queryParams}`, {
-                        avg_daily_soiling_rate_pct: -0.22,
-                        inferred_cleaning_dates: ["2026-06-12", "2026-06-25"]
-                    }),
-                    fetchSafe(`/api/scb_outliers${queryParams}`, {
-                        underperforming_strings: {},
-                        normal_strings_count: 16,
-                        mean_current: 8.5,
-                        std_dev: 0.4
-                    }),
-                    fetchSafe(`/api/inverter_efficiency${queryParams}`, {
-                        fleet_avg_efficiency_pct: 95.6,
-                        underperforming_inverters: [],
-                        fleet_curve: [
-                            {"load_bin": "0-10%", "avg_efficiency_pct": 87.2},
-                            {"load_bin": "10-20%", "avg_efficiency_pct": 91.5},
-                            {"load_bin": "20-30%", "avg_efficiency_pct": 94.1},
-                            {"load_bin": "30-40%", "avg_efficiency_pct": 95.3},
-                            {"load_bin": "40-50%", "avg_efficiency_pct": 95.8},
-                            {"load_bin": "50-60%", "avg_efficiency_pct": 96.1},
-                            {"load_bin": "60-70%", "avg_efficiency_pct": 96.2},
-                            {"load_bin": "70-80%", "avg_efficiency_pct": 96.2},
-                            {"load_bin": "80-90%", "avg_efficiency_pct": 96.0},
-                            {"load_bin": "90-100%", "avg_efficiency_pct": 95.8}
-                        ]
-                    }),
-                    fetchSafe(`/api/irradiance_correlation${queryParams}`, {
-                        correlation_r2: 0.912,
-                        anomaly_flag: 'Normal',
-                        scatter_data: [
-                            {"poa": 100, "actual_kw": 800, "expected_kw": 850, "clipping": false},
-                            {"poa": 200, "actual_kw": 1650, "expected_kw": 1700, "clipping": false},
-                            {"poa": 300, "actual_kw": 2500, "expected_kw": 2550, "clipping": false},
-                            {"poa": 400, "actual_kw": 3320, "expected_kw": 3400, "clipping": false},
-                            {"poa": 500, "actual_kw": 4150, "expected_kw": 4250, "clipping": false},
-                            {"poa": 600, "actual_kw": 5020, "expected_kw": 5100, "clipping": false},
-                            {"poa": 700, "actual_kw": 5850, "expected_kw": 5950, "clipping": false},
-                            {"poa": 800, "actual_kw": 6700, "expected_kw": 6800, "clipping": false},
-                            {"poa": 900, "actual_kw": 7350, "expected_kw": 7650, "clipping": true},
-                            {"poa": 950, "actual_kw": 7380, "expected_kw": 8075, "clipping": true},
-                            {"poa": 1000, "actual_kw": 7400, "expected_kw": 8500, "clipping": true}
-                        ]
-                    }),
-                    fetchSafe(`/api/thermal_anomalies${queryParams}`, {
-                        anomaly_count: 0,
-                        max_delta_c: 5.2,
-                        status: 'Normal',
-                        daily_thermal_profile: [
-                            {"date": "2026-06-20", "avg_delta_c": 4.1},
-                            {"date": "2026-06-21", "avg_delta_c": 4.3},
-                            {"date": "2026-06-22", "avg_delta_c": 4.5},
-                            {"date": "2026-06-23", "avg_delta_c": 4.8},
-                            {"date": "2026-06-24", "avg_delta_c": 5.2}
-                        ]
-                    }),
-                    fetchSafe(`/api/curtailment${queryParams}`, {
-                        plant_availability_pct: 99.93,
-                        total_curtailment_hours: 4.5,
-                        total_fault_hours: 0.0,
-                        category_breakdown_hours: {"Running": 120.5, "Grid Curtailment": 4.5, "Fault/Trip": 0.0, "Nighttime": 108.0, "Standby": 7.0, "Scheduled Maintenance": 0.0},
-                        estimated_curtailed_kwh: 38916
-                    }),
-                    fetchSafe(`/api/alerts${queryParams}`, [
-                        {timestamp: "2026-06-24 11:20:00", asset_id: "JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", severity: "Warning", message: "BESS Cell voltage imbalance warning", status: "Active"}
-                    ]),
-                    fetchSafe(`/api/soiling_roi${queryParams}`, {
-                        last_cleaning_date: "2026-06-12",
-                        days_since_last_cleaning: 12,
-                        cumulative_loss_kwh: 1200.0,
-                        cumulative_loss_inr: 5400.0,
-                        daily_loss_kwh: 100.0,
-                        daily_loss_inr: 450.0,
-                        tipping_point_days: 22,
-                        days_remaining: 10,
-                        cleaning_recommended: false,
-                        optimal_cleaning_date: "2026-07-04",
-                        roi_pct: 0.0,
-                        cleaning_cost: 15000.0
-                    }),
-                    fetchSafe(`/api/forecast${queryParams}`, [
-                        {hour: "08:00", predicted_generation_kw: 150, bess_charge_discharge_kw: 0, bess_soc_pct: 20},
-                        {hour: "10:00", predicted_generation_kw: 1200, bess_charge_discharge_kw: 500, bess_soc_pct: 25},
-                        {hour: "12:00", predicted_generation_kw: 4500, bess_charge_discharge_kw: 2000, bess_soc_pct: 45},
-                        {hour: "14:00", predicted_generation_kw: 5200, bess_charge_discharge_kw: 2000, bess_soc_pct: 65},
-                        {hour: "16:00", predicted_generation_kw: 2100, bess_charge_discharge_kw: 0, bess_soc_pct: 65},
-                        {hour: "18:00", predicted_generation_kw: 100, bess_charge_discharge_kw: -1000, bess_soc_pct: 55},
-                        {hour: "20:00", predicted_generation_kw: 0, bess_charge_discharge_kw: -2000, bess_soc_pct: 35},
-                        {hour: "22:00", predicted_generation_kw: 0, bess_charge_discharge_kw: -1500, bess_soc_pct: 20}
-                    ])
-                ]);
-
-                // If the backend is unreachable, swap in window-varying demo data so the
-                // dashboard still responds to date selection (static / offline hosting).
-                if (!backendOnline) {
-                    const D = demoData(start, end);
-                    prData = D.prGap; bessData = D.bess; soilingData = D.soiling;
-                    scbData = D.scb; effData = D.eff; irrData = D.irr; thermalData = D.thermal;
-                    curtData = D.curt; alertsData = D.alerts; roiData = D.roi; forecastData = D.forecast;
-                }
-
-                // --- KPI Row 1 ---
-                try {
-                    document.getElementById('kpi-gen').innerText = `${Math.round(prData.actual_kwh || 0).toLocaleString()} / ${Math.round(prData.expected_kwh || 0).toLocaleString()} kWh`;
-                    document.getElementById('kpi-gen-sub').innerText = `Gap: ${Math.round(prData.gap_kwh || 0).toLocaleString()} kWh`;
-                    document.getElementById('kpi-pr').innerText = prData.pr_actual || 0;
-                    document.getElementById('kpi-eff').innerText = `${effData.fleet_avg_efficiency_pct || 0}%`;
-                    document.getElementById('kpi-eff-sub').innerText = `Underperforming: ${effData.underperforming_inverters?.length || 0} inv.`;
-                    document.getElementById('kpi-avail').innerText = `${curtData.plant_availability_pct || 0}%`;
-                    document.getElementById('kpi-avail-sub').innerText = `Curtailment: ${curtData.total_curtailment_hours || 0} h`;
-                } catch (e) { console.error("Error setting KPI Row 1:", e); }
-
-                // --- KPI Row 2 ---
-                try {
-                    document.getElementById('kpi-bess').innerText = `${bessData.state_of_health_pct || 0}%`;
-                    document.getElementById('kpi-bess-sub').innerText = `Cycles: ${bessData.total_cycles || 0} | CE: ${bessData.coulombic_efficiency || 0}`;
-                    document.getElementById('kpi-soiling').innerText = `${soilingData.avg_daily_soiling_rate_pct || 0}%`;
-                    document.getElementById('kpi-soiling-sub').innerText = `Cleanings: ${soilingData.inferred_cleaning_dates?.length || 0}`;
-                    document.getElementById('kpi-thermal').innerText = thermalData.anomaly_count || 0;
-                    document.getElementById('kpi-thermal-sub').innerText = `Max Delta: ${thermalData.max_delta_c || 0}°C`;
-                    document.getElementById('kpi-r2').innerText = irrData.correlation_r2 || 0;
-                    document.getElementById('kpi-r2-sub').innerText = irrData.anomaly_flag || 'N/A';
-                } catch (e) { console.error("Error setting KPI Row 2:", e); }
-
-                // --- O&M Toast Alerts Sweeper ---
-                try { checkAlerts(alertsData || []); } catch(e) { console.error(e); }
-
-                // --- Soiling ROI Update ---
-                try {
-                    document.getElementById('roi-last-clean').innerText = roiData.last_cleaning_date || 'N/A';
-                    document.getElementById('roi-days-elapsed').innerText = `${roiData.days_since_last_cleaning || 0} days`;
-                    document.getElementById('roi-loss-inr').innerText = `₹${Math.round(roiData.cumulative_loss_inr || 0).toLocaleString()}`;
-                    
-                    const pct = Math.min(100, (roiData.cumulative_loss_inr / roiData.cleaning_cost) * 100);
-                    document.getElementById('roi-progress-bar').style.width = `${pct}%`;
-                    
-                    const recBox = document.getElementById('roi-recommendation');
-                    if (roiData.cleaning_recommended) {
-                        recBox.innerText = `CLEAN RECOMMENDED (ROI: ${roiData.roi_pct}%)`;
-                        recBox.style.background = 'rgba(239, 68, 68, 0.15)';
-                        recBox.style.color = '#f87171';
-                        recBox.style.border = '1px solid rgba(239, 68, 68, 0.3)';
-                    } else {
-                        recBox.innerText = `Clean in ${roiData.days_remaining} days (${roiData.optimal_cleaning_date})`;
-                        recBox.style.background = 'rgba(16, 185, 129, 0.1)';
-                        recBox.style.color = '#34d399';
-                        recBox.style.border = '1px solid rgba(16, 185, 129, 0.2)';
-                    }
-                } catch(e) { console.error(e); }
-
-                // --- Charts ---
-                try { renderPrGap(prData.attribution || {}, prData.gap_kwh || 0); } catch(e) { console.error(e); }
-                try { renderEffCurve(effData.fleet_curve || []); } catch(e) { console.error(e); }
-                try { renderIrradiance(irrData.scatter_data || []); } catch(e) { console.error(e); }
-                try { renderCurtailment(curtData.category_breakdown_hours || {}); } catch(e) { console.error(e); }
-                try { renderForecast(forecastData || []); } catch(e) { console.error(e); }
-
-                // --- SCB Table ---
-                try { renderScbTable(scbData || {}); } catch(e) { console.error(e); }
-
-                // --- O&M Summary ---
-                try { renderOmSummary(prData, bessData, soilingData, scbData, thermalData, curtData, effData, irrData); } catch(e) { console.error(e); }
-
-            } catch (err) {
-                console.error("Dashboard fetch error:", err);
-            }
-        }
-
-        function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
-
-        function renderPrGap(attribution, gap) {
-            destroyChart('prGap');
-            const ctx = document.getElementById('prGapChart').getContext('2d');
-            charts['prGap'] = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(attribution),
-                    datasets: [{ label: 'Loss (kWh)', data: Object.values(attribution),
-                        backgroundColor: ['rgba(138,184,51,0.75)','rgba(9,137,177,0.75)','rgba(74,181,196,0.75)','rgba(2,150,118,0.75)'],
-                        borderColor: ['#8ab833','#0989b1','#4ab5c4','#029676'], borderWidth: 1.5, borderRadius: 6 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
-                        x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 10 } } }
-                    }
-                }
-            });
-        }
-
-        function renderEffCurve(fleetCurve) {
-            destroyChart('eff');
-            const ctx = document.getElementById('effCurveChart').getContext('2d');
-            charts['eff'] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: fleetCurve.map(d => d.load_bin),
-                    datasets: [{ label: 'DC-AC Efficiency %', data: fleetCurve.map(d => d.avg_efficiency_pct),
-                        borderColor: '#4ab5c4', backgroundColor: 'rgba(74,181,196,0.1)',
-                        fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#4ab5c4' }]
-                },
-                options: { responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { min: 85, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', callback: v => v + '%' } },
-                        x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 9 } } }
-                    }
-                }
-            });
-        }
-
-        function renderIrradiance(scatter) {
-            destroyChart('irr');
-            if (!scatter || scatter.length === 0) return;
-            const ctx = document.getElementById('irradianceChart').getContext('2d');
-            const normal = scatter.filter(d => !d.clipping);
-            const clipping = scatter.filter(d => d.clipping);
-            const expected = scatter.map(d => ({ x: d.poa, y: d.expected_kw })).sort((a,b)=>a.x-b.x);
-            charts['irr'] = new Chart(ctx, {
-                type: 'scatter',
-                data: {
-                    datasets: [
-                        { label: 'Actual Output', data: normal.map(d => ({ x: d.poa, y: d.actual_kw })),
-                          backgroundColor: 'rgba(138,184,51,0.65)', pointRadius: 4 },
-                        { label: 'Clipping', data: clipping.map(d => ({ x: d.poa, y: d.actual_kw })),
-                          backgroundColor: 'rgba(239,68,68,0.8)', pointRadius: 5 },
-                        { label: 'Expected (Linear)', data: expected, showLine: true,
-                          borderColor: 'rgba(74,181,196,0.7)', borderDash: [4,3], borderWidth: 1.5,
-                          pointRadius: 0, fill: false }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#9ca3af', font: { size: 10 }, boxWidth: 10 } } },
-                    scales: {
-                        x: { title: { display: true, text: 'POA (W/m²)', color: '#9ca3af', font: { size: 9 } },
-                             grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: { size: 9 } } },
-                        y: { title: { display: true, text: 'Power (kW)', color: '#9ca3af', font: { size: 9 } },
-                             grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', font: { size: 9 } } }
-                    }
-                }
-            });
-        }
-
-        function renderCurtailment(cats) {
-            destroyChart('curt');
-            if (!cats) return;
-            const ctx = document.getElementById('curtailmentChart').getContext('2d');
-            const labels = Object.keys(cats);
-            const values = Object.values(cats);
-            const colors = {
-                'Running': 'rgba(138,184,51,0.8)', 'Grid Curtailment': 'rgba(245,158,11,0.8)',
-                'Fault/Trip': 'rgba(239,68,68,0.8)', 'Nighttime': 'rgba(60,70,100,0.7)',
-                'Standby': 'rgba(74,181,196,0.6)', 'Scheduled Maintenance': 'rgba(139,92,246,0.7)'
-            };
-            charts['curt'] = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: labels,
-                    datasets: [{ data: values,
-                        backgroundColor: labels.map(l => colors[l] || 'rgba(150,150,150,0.6)'),
-                        borderWidth: 1, borderColor: 'rgba(11,15,25,0.5)', hoverOffset: 6 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'right', labels: { color: '#9ca3af', font: { size: 9 }, padding: 8, boxWidth: 10 } }
-                    },
-                    cutout: '60%'
-                }
-            });
-        }
-
-        function renderForecast(forecastData) {
-            destroyChart('forecast');
-            if (!forecastData || forecastData.length === 0) return;
-            const ctx = document.getElementById('forecastChart').getContext('2d');
-            charts['forecast'] = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: forecastData.map(d => d.hour),
-                    datasets: [
-                        {
-                            label: 'Predicted Generation (kW)',
-                            data: forecastData.map(d => d.predicted_generation_kw),
-                            borderColor: '#8ab833',
-                            backgroundColor: 'rgba(138, 184, 51, 0.1)',
-                            fill: true,
-                            tension: 0.3,
-                            yAxisID: 'y',
-                            pointRadius: 3
-                        },
-                        {
-                            label: 'BESS Dispatch (kW)',
-                            data: forecastData.map(d => d.bess_charge_discharge_kw),
-                            borderColor: '#0989b1',
-                            backgroundColor: 'rgba(9, 137, 177, 0.1)',
-                            fill: true,
-                            tension: 0.3,
-                            yAxisID: 'y',
-                            pointRadius: 3
-                        },
-                        {
-                            label: 'BESS SOC (%)',
-                            data: forecastData.map(d => d.bess_soc_pct),
-                            borderColor: '#4ab5c4',
-                            borderDash: [5, 5],
-                            fill: false,
-                            tension: 0.4,
-                            yAxisID: 'ySoc',
-                            pointRadius: 3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    plugins: {
-                        legend: {
-                            labels: { color: '#9ca3af', font: { size: 9 }, boxWidth: 10 }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left',
-                            title: { display: true, text: 'Power (kW)', color: '#9ca3af', font: { size: 9 } },
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#9ca3af', font: { size: 9 } }
-                        },
-                        ySoc: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            min: 0,
-                            max: 100,
-                            title: { display: true, text: 'SOC (%)', color: '#9ca3af', font: { size: 9 } },
-                            grid: { drawOnChartArea: false },
-                            ticks: { color: '#9ca3af', font: { size: 9 } }
-                        },
-                        x: {
-                            grid: { color: 'rgba(255,255,255,0.05)' },
-                            ticks: { color: '#9ca3af', font: { size: 9 } }
-                        }
-                    }
-                }
-            });
-        }
-
-        function renderScbTable(scbData) {
-            const tbody = document.querySelector('#scb-outliers-table tbody');
-            tbody.innerHTML = '';
-            if (scbData.error) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#f87171;">${scbData.error}</td></tr>`; return; }
-            const outliers = scbData.underperforming_strings || {};
-            const mean_c = scbData.mean_current || 0;
-            const std_d = scbData.std_dev || 0;
-            let rows = '';
-            if (Object.keys(outliers).length === 0) {
-                for(let i=1; i<=5; i++) {
-                    rows += `<tr><td>SCB ${i}</td><td>${(mean_c + (Math.random()-0.5)*std_d).toFixed(2)}</td><td>${(Math.random()*0.5).toFixed(2)}</td><td><span class="badge-success">Normal</span></td></tr>`;
-                }
-                rows += `<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);font-size:0.72rem;">All strings within normal limits.</td></tr>`;
-            } else {
-                for (const [str, info] of Object.entries(outliers)) {
-                    rows += `<tr><td>${str}</td><td>${info.current.toFixed(2)}</td><td style="color:#f87171;">${info.z_score}</td><td><span class="badge-alert">Underperforming</span></td></tr>`;
-                }
-                rows += `<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);font-size:0.72rem;">${scbData.normal_strings_count} strings normal.</td></tr>`;
-            }
-            tbody.innerHTML = rows;
-        }
-
-        function renderOmSummary(prData, bessData, soilingData, scbData, thermalData, curtData, effData, irrData) {
-            const box = document.getElementById('om-summary-box');
-            const lastCleaning = soilingData.inferred_cleaning_dates?.slice(-1)[0] || 'N/A';
-            box.innerHTML = `
-                <strong style="color:var(--accent-lime)">[Generation]</strong> PR = <strong>${prData.pr_actual}</strong> vs target 0.85. Gap = <strong>${Math.round(prData.gap_kwh).toLocaleString()} kWh</strong> (Soiling ${prData.attribution?.Soiling} kWh, Shading ${prData.attribution?.Shading} kWh).<br>
-                <strong style="color:var(--accent-cyan)">[Efficiency]</strong> Fleet DC-AC avg = <strong>${effData.fleet_avg_efficiency_pct}%</strong>. Underperforming inverters: <strong>${effData.underperforming_inverters?.join(', ') || 'None'}</strong>.<br>
-                <strong style="color:var(--accent-teal)">[Irradiance]</strong> R² = <strong>${irrData.correlation_r2}</strong>. Avg output ratio = <strong>${irrData.avg_output_ratio}</strong>. Flag: <strong>${irrData.anomaly_flag}</strong>.<br>
-                <strong style="color:#f87171">[Thermal]</strong> ${thermalData.anomaly_count} hotspot events detected. Max temp delta = <strong>${thermalData.max_delta_c}°C</strong>. Status: <strong>${thermalData.status}</strong>.<br>
-                <strong style="color:var(--accent-orange)">[Grid]</strong> Availability = <strong>${curtData.plant_availability_pct}%</strong>. Curtailment = <strong>${curtData.total_curtailment_hours} h</strong> (${curtData.estimated_curtailed_kwh} kWh lost). Fault hrs = <strong>${curtData.total_fault_hours}</strong>.<br>
-                <strong style="color:var(--accent-green)">[BESS]</strong> ${bessData.bess_id} SoH = <strong>${bessData.state_of_health_pct}%</strong>, ${bessData.total_cycles} cycles. Status: <strong>${bessData.status}</strong>.<br>
-                <strong style="color:var(--accent-lime)">[Soiling]</strong> Daily loss rate = <strong>${soilingData.avg_daily_soiling_rate_pct}%/day</strong>. Last cleaning: <strong>${lastCleaning}</strong>.
-            `;
-        }
-
-        // --- Chat ---
-        function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
-        function sendQ(t) { document.getElementById('user-input').value = t; sendMessage(); }
-
-        // Global Chart.js defaults for dark theme
-        Chart.defaults.color = '#9ca3af';
-        Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
-        Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
-
-        async function sendMessage() {
-            const inputField = document.getElementById('user-input');
-            const prompt = inputField.value.trim();
-            if (!prompt) return;
-            inputField.value = '';
-            const chatBox = document.getElementById('chat-box');
-            chatBox.innerHTML += `<div class="message user">${prompt}</div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            const loadingId = 'loading-' + Date.now();
-            chatBox.innerHTML += `
-                <div class="message agent" id="${loadingId}">
-                    <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--text-secondary);">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                        Running ML diagnostics &amp; AI inference...
-                    </div>
-                </div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-
-            let data;
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST', headers: apiHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ prompt })
-                });
-                if (!response.ok) {
-                    throw new Error(`Server returned status ${response.status}`);
-                }
-                data = await response.json();
-            } catch (networkErr) {
-                console.warn("API server unreachable, falling back to local simulation:", networkErr);
-                data = simulateChatbot(prompt);
-            }
-
-            // Pause before answering completely (1 to 5 seconds randomly)
-            const pauseMs = 1000 + Math.random() * 4000;
-            await new Promise(resolve => setTimeout(resolve, pauseMs));
-
-            const loadingMsg = document.getElementById(loadingId);
-            try {
-                // Thoughts panel hidden per user request
-                let thoughtsHtml = '';
-
-                // Markdown-lite formatting with code block masking to preserve white spaces/new lines
-                let content = (data.response || 'No response received.');
-                const codeBlocks = [];
-                content = content.replace(/```([\s\S]*?)```/g, (match) => {
-                    const id = `__CODE_BLOCK_${codeBlocks.length}__`;
-                    codeBlocks.push(match);
-                    return id;
-                });
-                content = content.replace(/`([^`\n]+)`/g, (match) => {
-                    const id = `__CODE_BLOCK_${codeBlocks.length}__`;
-                    codeBlocks.push(match);
-                    return id;
-                });
-
-                content = content
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n/g, '<br>');
-
-                codeBlocks.forEach((block, idx) => {
-                    const placeholder = `__CODE_BLOCK_${idx}__`;
-                    let formatted = '';
-                    if (block.startsWith('```')) {
-                        const code = block.replace(/```(json)?/, '').slice(0, -3).trim();
-                        formatted = `<pre><code class="${block.startsWith('```json') ? 'language-json' : ''}">${code}</code></pre>`;
-                    } else {
-                        formatted = `<code>${block.slice(1, -1)}</code>`;
-                    }
-                    content = content.replace(placeholder, formatted);
-                });
-
-                // Inline chart rendering
-                let chartHtml = '';
-                const chartCanvasId = 'chat-chart-' + Date.now();
-                if (data.chart) {
-                    const chartSpec = data.chart;
-                    const titleText = chartSpec.title || '';
-                    const descText = chartSpec.description || 'Telemetry chart comparison.';
-                    chartHtml = `
-                        <div class="chat-chart-wrapper" style="
-                            background: rgba(0,0,0,0.3);
-                            border: 1px solid var(--card-border);
-                            border-radius: 10px;
-                            padding: 0.75rem;
-                            margin-top: 0.75rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                ${titleText ? `<div style="font-size:0.75rem;font-weight:600;color:var(--accent-lime);letter-spacing:0.3px;">${titleText}</div>` : '<div></div>'}
-                                <div class="info-container">
-                                    <div class="info-icon">i</div>
-                                    <div class="tooltip-text" style="right: 0; left: auto; top: 18px;">${descText}</div>
-                                </div>
-                            </div>
-                            <div style="position:relative;height:220px;">
-                                <canvas id="${chartCanvasId}"></canvas>
-                            </div>
-                        </div>`;
-                }
-
-                // Inject HTML
-                const msgId = 'msg-' + Date.now();
-                loadingMsg.outerHTML = `
-                    <div class="message agent" style="max-width:95%;" id="${msgId}" data-prompt="${prompt.replace(/"/g, '&quot;')}" data-response="${content.replace(/"/g, '&quot;')}">
-                        ${thoughtsHtml}
-                        <div class="markdown-content">${content}</div>
-                        ${chartHtml}
-                        <div class="feedback-widget" style="margin-top:10px; padding-top:5px; border-top:1px solid var(--border-color); display:flex; gap:10px; font-size:12px; align-items:center;">
-                            <span style="color:var(--text-secondary);">Helpful?</span>
-                            <button onclick="submitFeedback('${msgId}', 1)" style="background:none; border:none; cursor:pointer; font-size:16px;" title="Yes">👍</button>
-                            <button onclick="submitFeedback('${msgId}', -1)" style="background:none; border:none; cursor:pointer; font-size:16px;" title="No">👎</button>
-                            <div id="fb-status-${msgId}" style="display:none; color:var(--success-color); margin-left:10px;">Thanks for the feedback!</div>
-                        </div>
-                    </div>`;
-
-                // Render Chart.js after DOM is ready using setTimeout
-                if (data.chart) {
-                    setTimeout(() => {
-                        try {
-                            const spec   = data.chart;
-                            const ctx    = document.getElementById(chartCanvasId).getContext('2d');
-                            const opts   = spec.options || {};
-                            opts.responsive = true;
-                            opts.maintainAspectRatio = false;
-                            if (!opts.plugins) opts.plugins = {};
-                            if (!opts.plugins.legend) opts.plugins.legend = {};
-                            opts.plugins.legend.labels = { color: '#9ca3af', font: { size: 10 }, boxWidth: 10 };
-
-                            // Apply dark colors to all scales
-                            if (opts.scales) {
-                                for (const scale of Object.values(opts.scales)) {
-                                    if (!scale.grid) scale.grid = {};
-                                    scale.grid.color = 'rgba(255,255,255,0.05)';
-                                    if (!scale.ticks) scale.ticks = {};
-                                    scale.ticks.color = '#9ca3af';
-                                    scale.ticks.font = { size: 9 };
-                                    if (scale.title) scale.title.color = '#9ca3af';
-                                }
-                            }
-
-                            new Chart(ctx, {
-                                type: spec.type,
-                                data: spec.data,
-                                options: opts
-                            });
-                        } catch (chartErr) {
-                            console.error("Error drawing inline chat chart:", chartErr);
-                        }
-                    }, 50);
-                }
-
-                chatBox.scrollTop = chatBox.scrollHeight;
-            } catch (renderErr) {
-                console.error("Error rendering message:", renderErr);
-                loadingMsg.outerHTML = `
-                    <div class="message agent" style="max-width:95%;">
-                        <div class="markdown-content">${data.response || 'No response received.'}</div>
-                        <div style="font-size: 0.7rem; color: #ef4444; margin-top: 5px;">Warning: Render error occurred. Check console logs.</div>
-                    </div>`;
-                chatBox.scrollTop = chatBox.scrollHeight;
-            }
-        }
-
-        // High-Fidelity Client-side Chatbot Simulation for GitHub Pages
-        function simulateChatbot(prompt) {
-            const res = _simulateChatbotRaw(prompt);
-            const lower = prompt.toLowerCase();
-            let timeframeMsg = "";
-            if (lower.includes("today")) {
-                res.thoughts.push("Relative date 'today' resolved (base time: 2026-06-26 14:50:23).");
-                res.thoughts.push("No live telemetry ingested after 2026-06-24. Falling back/clipping to latest database date: 2026-06-24.");
-                timeframeMsg = "\n\n> [!NOTE]\n> **Timeframe Alert**: Query timeframe 'today' (2026-06-26) was clipped/fell back to the latest recorded data day (**June 24, 2026**) since Continuous Telemetry Ingestion is skipped.";
-            } else if (lower.includes("yesterday")) {
-                res.thoughts.push("Relative date 'yesterday' resolved (base time: 2026-06-26 14:50:23).");
-                res.thoughts.push("No live telemetry ingested after 2026-06-24. Falling back/clipping to latest database date: 2026-06-24.");
-                timeframeMsg = "\n\n> [!NOTE]\n> **Timeframe Alert**: Query timeframe 'yesterday' (2026-06-25) was clipped/fell back to the latest recorded data day (**June 24, 2026**).";
-            }
-            if (timeframeMsg && res && res.response) {
-                res.response += timeframeMsg;
-            }
-            // ENG-02: this path runs ONLY when the live API is unreachable. The
-            // numbers below are a static client-side demo, not live telemetry.
-            if (res && res.response) {
-                res.response = "> ⚠️ **Offline demo — not live data.** The API server was unreachable, so this answer is a static client-side simulation.\n\n" + res.response;
-            }
-            return res;
-        }
-
-        function _simulateChatbotRaw(prompt) {
-            const lower = prompt.toLowerCase();
-            let responseText = "";
-            let thoughts = ["Initializing local telemetry diagnostics...", "API server offline, running client-side simulated agent..."];
-            let chart = null;
-
-            // Troubleshooting RAG Simulation
-            const codes = prompt.match(/\b\d+\b/g);
-            let matchedManual = null;
-            if (codes) {
-                const manuals = {
-                    inverter: {
-                        "2": {
-                            name: "Curtailment (Grid Wait)",
-                            severity: "Info",
-                            description: "Inverter is throttled or waiting for grid dispatch control signals.",
-                            resolution: "No action required. System is waiting for Power Quality or Grid operator commands to resume full feed-in."
-                        },
-                        "3": {
-                            name: "Over-Temperature Fault",
-                            severity: "Warning",
-                            description: "Inverter internal heat sink temperature has exceeded safe operating limits.",
-                            resolution: "1. Inspect internal/external fans for dust blockage. 2. Clean the air intake filters. 3. Check for adequate ventilation clearances around the enclosure."
-                        },
-                        "4": {
-                            name: "String Current Imbalance",
-                            severity: "Warning",
-                            description: "Difference in string current input across SCBs exceeds 15% deviation limits.",
-                            resolution: "1. Check SCB string current fuses. 2. Inspect module strings for local shading or heavy dust build-up. 3. Verify DC input connector isolation resistances."
-                        }
-                    },
-                    battery: {
-                        "501": {
-                            name: "Cell Voltage Imbalance",
-                            severity: "Warning",
-                            description: "The difference between individual cell voltages in a rack exceeds the maximum allowable threshold.",
-                            resolution: "1. Trigger and run a manual cell equalization cycle via the battery management system (BMS). 2. Check connections and torque on cell link bars. 3. Replace cell module if delta persists after equalization."
-                        }
-                    },
-                    weather: {
-                        "101": {
-                            name: "Irradiance Sensor Desynchronization",
-                            severity: "Warning",
-                            description: "Plane of Array (sensor) output differs from adjacent sensor by >50 W/m².",
-                            resolution: "1. Clean the pyranometer glass window. 2. Verify pyranometer levelling and alignment angles. 3. Recalibrate sensor offset values."
-                        }
-                    }
-                };
-                for (const code of codes) {
-                    for (const dev of ["inverter", "battery", "weather"]) {
-                        if (manuals[dev][code]) {
-                            matchedManual = { dev, code, info: manuals[dev][code] };
-                            break;
-                        }
-                    }
-                    if (matchedManual) break;
-                }
-            }
-
-            if (matchedManual) {
-                thoughts.push(`Matching troubleshooting guide for ${matchedManual.dev} code ${matchedManual.code}...`);
-                const info = matchedManual.info;
-                responseText = `### Troubleshooting Guidelines: ${info.name} (${matchedManual.dev.toUpperCase()} Code ${matchedManual.code})\n\n` +
-                               `*   **Severity**: **${info.severity}**\n` +
-                               `*   **Description**: ${info.description}\n\n` +
-                               `#### Recommended Resolution Steps:\n` +
-                               info.resolution.split('. ').map(s => s.trim() ? `1. ${s.replace(/^\d+\.\s*/, '')}` : '').filter(s => s).join('\n');
-                return { response: responseText, thoughts, chart: null };
-            }
-
-            // 1. Weather SQL Query Simulation (Checks weather first to prevent generic SQL overrides)
-            if (lower.includes("weather") && (lower.includes("sql") || lower.includes("select") || lower.includes("telemetry"))) {
-                thoughts.push("Executing weather SQL query simulation...");
-                responseText = `**SQL Query Results (Weather Data):**\n\`\`\`json\n[\n  {"timestamp": "2026-06-24 16:30:13", "ambientTemperature": 34.82899856567383, "planeOfArraySensor01": 488.0320129394531},\n  {"timestamp": "2026-06-24 16:25:13", "ambientTemperature": 34.816001892089844, "planeOfArraySensor01": 526.9940185546875},\n  {"timestamp": "2026-06-24 16:20:13", "ambientTemperature": 34.858001708984375, "planeOfArraySensor01": 526.7839965820312},\n  {"timestamp": "2026-06-24 16:15:12", "ambientTemperature": 34.845001220703125, "planeOfArraySensor01": 551.5869750976562},\n  {"timestamp": "2026-06-24 16:10:12", "ambientTemperature": 34.8849983215332, "planeOfArraySensor01": 556.8569946289062}\n]\n\`\`\``;
-            
-            // 2. Battery / BESS health
-            } else if (lower.includes("battery") || lower.includes("bess") || lower.includes("b1bct1")) {
-                // If it is a comparison request, bypass and pass to comparisons block
-                if (lower.includes("compare") || lower.includes("comparison") || lower.includes("vs")) {
-                    return simulateComparison(lower, thoughts);
-                }
-                thoughts.push("Resolving asset B1BCT1...");
-                thoughts.push("Retrieving battery health metrics...");
-                responseText = `### BESS Health Summary — B1BCT1\n\n*   **Device ID**: \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1\`\n*   **State of Health (SoH)**: **99.4%**\n*   **Total Charge Cycles**: **12**\n*   **Coulombic Efficiency**: **0.98**\n*   **Operating Status**: **Healthy**\n\nNo degradation warnings or actionable thermal tasks detected. Battery capacity remains within nominal specifications.`;
-                chart = {
-                    type: "doughnut",
-                    title: "BESS State of Health — B1BCT1",
-                    description: "Visualizes BESS State of Health (SoH) as healthy vs degraded capacity.",
-                    data: {
-                        labels: ["Healthy Capacity", "Degraded"],
-                        datasets: [{
-                            data: [99.4, 0.6],
-                            backgroundColor: ["rgba(138,184,51,0.8)", "rgba(60,70,100,0.5)"],
-                            borderWidth: 1,
-                            borderColor: "rgba(11,15,25,0.5)"
-                        }]
-                    },
-                    options: { cutout: "70%" }
-                };
-
-            // 3. PR Gap Breakdown
-            } else if (lower.includes("pr gap") || lower.includes("pr_gap") || lower.includes("performance ratio") || lower.includes("generation performance") || lower.includes("loss attribution")) {
-                thoughts.push("Loading actual and expected generation telemetry...");
-                thoughts.push("Calculating Performance Ratio (PR) gap...");
-                thoughts.push("Attributing losses to soiling, shading, hardware, and grid curtailment...");
-                responseText = `### Generation Performance & PR Gap Breakdown\n\n*   **Actual Generation**: **5,628 kWh**\n*   **Expected Generation**: **8,140 kWh**\n*   **Performance Ratio (PR)**: **0.7788** (Target: **0.85**)\n*   **Generation Gap**: **2,512 kWh**\n\n#### Loss Attribution Analysis:\n1.  **Soiling Losses**: **1,130.4 kWh** (45.0% of gap) — Significant dust accumulation on module surfaces.\n2.  **Hardware Inefficiency**: **628.0 kWh** (25.0% of gap) — Sub-optimal conversion and cabling loss.\n3.  **Grid Curtailment**: **628.0 kWh** (25.0% of gap) — Grid-forced shutdown during peak hours.\n4.  **Shading Losses**: **125.6 kWh** (5.0% of gap) — Localized obstruction from adjacent structures.`;
-                chart = {
-                    type: "bar",
-                    title: "PR Gap Loss Attribution (kWh)",
-                    description: "Loss attribution breakdown calculated using aggregate physical model comparison.",
-                    data: {
-                        labels: ["Soiling", "Shading", "Hardware Inefficiency", "Grid Curtailment"],
-                        datasets: [{
-                            label: "Loss (kWh)",
-                            data: [1130.4, 125.6, 628.0, 628.0],
-                            backgroundColor: ["rgba(138,184,51,0.75)", "rgba(9,137,177,0.75)", "rgba(74,181,196,0.75)", "rgba(2,150,118,0.75)"],
-                            borderColor: ["#8ab833","#0989b1","#4ab5c4","#029676"],
-                            borderWidth: 1.5,
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: true } }
-                    }
-                };
-
-            // 4. String Outliers / SCB Checks
-            } else if (lower.includes("string") || lower.includes("scb") || lower.includes("outlier") || lower.includes("underperforming")) {
-                thoughts.push("Loading String Combiner Box (SCB) current metrics...");
-                thoughts.push("Running Z-score outlier detection algorithm...");
-                thoughts.push("Flagging strings with Z-score < -2.0...");
-                responseText = `### String Combiner Box (SCB) Outlier Check — Inverter B1INV1\n\n*   **Fleet Status**: **All strings within normal limits.**\n*   **Mean String Current**: **8.5 A** (Std Dev: **0.4 A**)\n*   **Total Strings Monitored**: **16**\n*   **Anomalies Flagged**: **0**\n\nNo underperforming strings are currently flagged. The module strings are operating within the expected current distribution range.`;
-                chart = {
-                    type: "bar",
-                    title: "SCB Current Z-Scores — Inverter B1INV1",
-                    description: "Monitors individual string current deviation. Value below -2.0 indicates string failure/shading.",
-                    data: {
-                        labels: ["Str 1", "Str 2", "Str 3", "Str 4", "Str 5", "Str 6", "Str 7", "Str 8", "Str 9", "Str 10", "Str 11", "Str 12", "Str 13", "Str 14", "Str 15", "Str 16"],
-                        datasets: [{
-                            label: "Z-Score",
-                            data: [-0.1, 0.2, -0.3, 0.1, -1.8, 0.4, -0.2, 0.1, 0.3, -0.5, 0.2, -0.1, 0.4, -0.3, 0.1, 0.2],
-                            backgroundColor: "rgba(138,184,51,0.75)",
-                            borderColor: "#8ab833",
-                            borderWidth: 1.5,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        plugins: { legend: { display: false } }
-                    }
-                };
-
-            // 5. Inverter efficiency curve
-            } else if (lower.includes("efficiency") || lower.includes("dc-ac") || lower.includes("conversion")) {
-                if (lower.includes("compare") || lower.includes("comparison") || lower.includes("vs")) {
-                    return simulateComparison(lower, thoughts);
-                }
-                thoughts.push("Running Inverter Efficiency Curve analysis...");
-                responseText = `### Inverter Fleet DC-AC Efficiency Curve\n\n*   **Fleet Average Efficiency**: **95.6%**\n*   **Optimal Load Level**: 50% to 80% load factor (efficiency peaks at **96.2%**).\n*   **Underperforming Units**: None. All 2 active inverters (B1INV1, B3INV1) are converting above the 92% alert threshold.\n\nDC-AC conversion parameters are calibrated and running within high efficiency brackets.`;
-                chart = {
-                    type: "line",
-                    title: "Inverter DC-AC Efficiency Curve — Fleet Avg 95.6%",
-                    description: "Aggregates inverter DC-AC conversion efficiency across different load factor bins.",
-                    data: {
-                        labels: ["0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%", "80-90%", "90-100%"],
-                        datasets: [{
-                            label: "Avg Efficiency %",
-                            data: [87.2, 91.5, 94.1, 95.3, 95.8, 96.1, 96.2, 96.2, 96.0, 95.8],
-                            borderColor: "#4ab5c4",
-                            backgroundColor: "rgba(74,181,196,0.12)",
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 5
-                        }, {
-                            label: "Target (92%)",
-                            data: [92, 92, 92, 92, 92, 92, 92, 92, 92, 92],
-                            borderColor: "rgba(239,68,68,0.5)",
-                            borderDash: [5, 4],
-                            borderWidth: 1.5,
-                            pointRadius: 0,
-                            fill: false
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            y: { min: 85, max: 100, title: { display: true, text: "Efficiency (%)" } },
-                            x: { title: { display: true, text: "Load Factor Bin" } }
-                        }
-                    }
-                };
-
-            // 6. Irradiance-Power Correlation & Clipping
-            } else if (lower.includes("irradiance") || lower.includes("correlate") || lower.includes("clipping") || lower.includes("poa") || lower.includes("scatter")) {
-                thoughts.push("Fetching Plane-of-Array (POA) irradiance sensors...");
-                thoughts.push("Comparing POA irradiance with active power output...");
-                thoughts.push("Calculating R² correlation coefficient...");
-                responseText = `### Irradiance vs Power Output Analysis\n\n*   **Irradiance POA Correlation (R²)**: **0.912**\n*   **Status**: **Normal with Inverter Power Clipping**\n*   **Observations**:\n    *   Strong linear correlation up to **800 W/m²**.\n    *   Significant power clipping occurs above **900 W/m²** at approximately **7,400 kW** due to inverter capacity limits.\n    *   No severe soiling or degradation shifts observed in the scatter profile.`;
-                chart = {
-                    type: "scatter",
-                    title: "POA Irradiance vs Aggregate Power Output",
-                    description: "Plots Plane-of-Array (POA) irradiance against plant active power. Red dots highlight power clipping.",
-                    data: {
-                        datasets: [
-                            {
-                                label: "Actual Output",
-                                data: [
-                                    { x: 100, y: 800 }, { x: 200, y: 1650 }, { x: 300, y: 2500 },
-                                    { x: 400, y: 3320 }, { x: 500, y: 4150 }, { x: 600, y: 5020 },
-                                    { x: 700, y: 5850 }, { x: 800, y: 6700 }
-                                ],
-                                backgroundColor: "rgba(138,184,51,0.65)",
-                                pointRadius: 4
-                            },
-                            {
-                                label: "Clipping",
-                                data: [{ x: 900, y: 7350 }, { x: 950, y: 7380 }, { x: 1000, y: 7400 }],
-                                backgroundColor: "rgba(239,68,68,0.8)",
-                                pointRadius: 5
-                            },
-                            {
-                                label: "Expected (Linear)",
-                                data: [
-                                    { x: 100, y: 850 }, { x: 200, y: 1700 }, { x: 300, y: 2550 },
-                                    { x: 400, y: 3400 }, { x: 500, y: 4250 }, { x: 600, y: 5100 },
-                                    { x: 700, y: 5950 }, { x: 800, y: 6800 }, { x: 900, y: 7650 },
-                                    { x: 950, y: 8075 }, { x: 1000, y: 8500 }
-                                ],
-                                showLine: true,
-                                borderColor: "rgba(74,181,196,0.7)",
-                                borderDash: [4, 3],
-                                borderWidth: 1.5,
-                                pointRadius: 0,
-                                fill: false
-                            }
-                        ]
-                    },
-                    options: {
-                        scales: {
-                            x: { title: { display: true, text: "POA (W/m²)" } },
-                            y: { title: { display: true, text: "Power (kW)" } }
-                        }
-                    }
-                };
-
-            // 7. Thermal hotspot warnings
-            } else if (lower.includes("thermal") || lower.includes("anomaly") || lower.includes("anomalies") || lower.includes("hotspot") || lower.includes("temperature")) {
-                thoughts.push("Parsing module thermal telemetry...");
-                thoughts.push("Checking maximum temperature delta (ΔT)...");
-                thoughts.push("Scanning for localized hot spot signatures...");
-                responseText = `### Thermal Anomalies & Hotspot Report\n\n*   **Anomalies Detected**: **0**\n*   **Max Temperature Delta (ΔT)**: **5.2 °C** (Normal: < 10 °C)\n*   **Fleet Status**: **Normal**\n*   **Thermal Trend**: Average delta is stable at **4.8 °C - 5.2 °C** over the past 5 days.\n\nNo hot spots or diode failures are flagged. Module thermal profiles are within normal operating bounds.`;
-                chart = {
-                    type: "line",
-                    title: "Max Module Temp Delta (ΔT) — 5-Day Trend",
-                    description: "Tracks the maximum delta between ambient and module temperatures across the fleet.",
-                    data: {
-                        labels: ["2026-06-20", "2026-06-21", "2026-06-22", "2026-06-23", "2026-06-24"],
-                        datasets: [{
-                            label: "Max Temp Delta (°C)",
-                            data: [4.1, 4.3, 4.5, 4.8, 5.2],
-                            borderColor: "#f59e0b",
-                            backgroundColor: "rgba(245,158,11,0.12)",
-                            fill: true,
-                            tension: 0.2,
-                            pointRadius: 5
-                        }]
-                    },
-                    options: {
-                        scales: {
-                            y: { min: 0, max: 10, title: { display: true, text: "Max Delta (°C)" } }
-                        }
-                    }
-                };
-
-            // 8. Availability & Curtailment
-            } else if (lower.includes("curtailment") || lower.includes("availability") || lower.includes("grid") || lower.includes("nighttime")) {
-                thoughts.push("Loading grid connection and plant availability logs...");
-                thoughts.push("Summing curtailment and fault hours...");
-                thoughts.push("Estimating curtailed energy loss...");
-                responseText = `### Grid Curtailment & Availability Report\n\n*   **Plant Availability**: **99.93%**\n*   **Total Curtailment Hours**: **4.5 hours**\n*   **Estimated Energy Lost**: **38,916 kWh**\n*   **Fault Hours**: **0.0 hours**\n\n#### Daylight Operating State Breakdown:\n*   **Running**: **120.5 hours**\n*   **Grid Curtailment**: **4.5 hours**\n*   **Nighttime/Standby**: **115.0 hours**`;
-                chart = {
-                    type: "doughnut",
-                    title: "Operating State Breakdown (Hours)",
-                    description: "Categorizes plant operating hours filtered strictly to daylight windows (POA > 50 W/m²).",
-                    data: {
-                        labels: ["Running", "Grid Curtailment", "Fault/Trip", "Nighttime", "Standby"],
-                        datasets: [{
-                            data: [120.5, 4.5, 0.0, 108.0, 7.0],
-                            backgroundColor: ["rgba(138,184,51,0.8)", "rgba(245,158,11,0.8)", "rgba(239,68,68,0.8)", "rgba(60,70,100,0.7)", "rgba(74,181,196,0.6)"],
-                            borderWidth: 1,
-                            borderColor: "rgba(11,15,25,0.5)"
-                        }]
-                    },
-                    options: { cutout: "60%" }
-                };
-
-            // 9. Asset Comparison Queries
-            } else if (lower.includes("compare") || lower.includes("comparison") || lower.includes("vs")) {
-                return simulateComparison(lower, thoughts);
-
-            // 10. Specific Methodology Questions
-            } else if (lower.includes("how") && (lower.includes("pr gap") || lower.includes("attribution") || lower.includes("performance ratio"))) {
-                thoughts.push("Loading PR Gap math model...");
-                responseText = `### PR Gap &amp; Performance Ratio Calculation Methodology\n\n*   **Expected Solar Power (\\(P_{\\text{exp}}\\))**:\n    \\[P_{\\text{exp}} = \\text{Capacity} \\cdot \\left(\\frac{\\text{POA}}{1000}\\right) \\cdot (1 - 0.004 \\cdot (T_{\\text{mod}} - 25)) \\cdot \\text{LossFactor}\\]\n    *Where \\(Capacity = 8648\\text{ kW}\\), \\(T_{\\text{mod}}\\) is module temperature, \\(POA\\) is Plane-of-Array irradiance, and \\(LossFactor = 0.85\\).*\n*   **Actual vs Expected Energy Integration**:\n    Aggregated in 5-minute intervals (\\(\\Delta t = \\frac{5}{60}\\text{ hours}\\)) where \\(E = P \\cdot \\Delta t\\).\n*   **PR Actual**:\n    \\[PR = \\frac{E_{\\text{actual}}}{E_{\\text{expected}}}\\]\n*   **Gap Loss Decomposition**:\n    *   *Grid Curtailment*: Lost energy when inverter status = 2.\n    *   *Hardware Inefficiency*: Losses when DC-AC efficiency drops below 92%.\n    *   *Soiling &amp; Shading*: Distributed from residual energy losses using season-calibrated shares.`;
-            } else if (lower.includes("how") && (lower.includes("string") || lower.includes("scb") || lower.includes("outlier") || lower.includes("z-score"))) {
-                thoughts.push("Loading SCB current Z-score model...");
-                responseText = `### String SCB Outlier Detection Methodology\n\n*   **Statistical Outliers**: Retrieves the latest String Combiner Box (SCB) current readings (\\(x_i\\)) for the selected inverter. Computes mean (\\(\\mu\\)) and standard deviation (\\(\\sigma\\)).\n*   **Z-Score Calculation**:\n    \\[Z_i = \\frac{x_i - \\mu}{\\sigma}\\]\n*   **Outlier Flag**: Strings with \\(Z_i < -2.0\\) are flagged as underperforming (e.g. due to localized shading, dirt, or module faults).`;
-            } else if (lower.includes("how") && (lower.includes("soiling") || lower.includes("dust") || lower.includes("cleaning"))) {
-                thoughts.push("Loading change-point soiling rate algorithm...");
-                responseText = `### Unsupervised Soiling Loss Calibration Methodology\n\n*   **Wash Cycle Detection**: Scans daily PR values for sudden positive jumps (\\(PR_{\\text{today}} - PR_{\\text{yesterday}} > 4.0\\%\\)) to identify panel washing events.\n*   **Decline Rate**: Performs a linear regression on daily PR values between consecutive cleaning events. The negative slope (\\(\\%/ \\text{day}\\)) represents the daily soiling loss rate.`;
-            } else if (lower.includes("how") && (lower.includes("battery") || lower.includes("soh") || lower.includes("coulombic") || lower.includes("cycle"))) {
-                thoughts.push("Loading BESS electro-chemical health metrics...");
-                responseText = `### Battery State of Health (SoH) Calculation Methodology\n\n*   **Coulombic Efficiency (\\(\\eta_C\\))**:\n    \\[\\eta_C = \\frac{\\sum |I_{\\text{discharge}}|}{\\sum |I_{\\text{charge}}|}\\]\n*   **Cycle Counting**: A full cycle is equivalent to a cumulative SOC change of 200%:\n    \\[\\text{Cycles} = \\left\\lfloor \\frac{\\sum |\\Delta SOC|}{200} \\right\\rfloor\\]\n*   **State of Health (SoH)**: Estimated from cycle wear using a linear fade coefficient of 0.015% per cycle:\n    \\[SoH = 100\\% - (0.015\\% \\cdot \\text{Cycles})\\]`;
-            } else if (lower.includes("how") && (lower.includes("inverter efficiency") || lower.includes("dc-ac") || lower.includes("conversion"))) {
-                thoughts.push("Loading Inverter DC-AC efficiency curve specs...");
-                responseText = `### Inverter DC-AC Efficiency Curve Methodology\n\n*   **Efficiency**: \\(\\text{Efficiency} = \\frac{P_{\\text{AC}}}{P_{\\text{DC}}} \\cdot 100\\%\\) (where \\(P_{\\text{AC}}\\) is active AC output power and \\(P_{\\text{DC}}\\) is input DC PV power).\n*   **Load Factor Binning**: Bins inverter operating data into 10% load increments relative to the 1430 kW rated capacity per inverter.\n*   **Degradation Alert**: Flags an inverter as underperforming if its average conversion efficiency falls below 92%.`;
-            } else if (lower.includes("how") && (lower.includes("clipping") || lower.includes("irradiance") || lower.includes("correlation") || lower.includes("poa"))) {
-                thoughts.push("Loading POA irradiance vs power correlation math...");
-                responseText = `### Irradiance-Power Correlation &amp; Clipping Methodology\n\n*   **Correlation (\\(R^2\\))**: Calculates the coefficient of determination (\\(R^2\\)) of the linear regression between WMS POA irradiance and aggregate active power.\n*   **Clipping Detection**: Flags clipping events when plant active power stays within 2% of the aggregate rated capacity (8648 kW) while POA irradiance exceeds 800 W/m².`;
-            } else if (lower.includes("how") && (lower.includes("thermal") || lower.includes("hotspot") || lower.includes("noct") || lower.includes("temp"))) {
-                thoughts.push("Loading module NOCT thermal delta model...");
-                responseText = `### Module Thermal Hotspots (NOCT Model) Methodology\n\n*   **Predicted Module Temp (\\(T_{\\text{pred}}\\))**:\n    \\[T_{\\text{pred}} = T_{\\text{ambient}} + \\left(\\frac{\\text{NOCT} - 20}{800}\\right) \\cdot \\text{POA}\\]\n    *Where \\(NOCT = 45^\\circ\\text{C}\\) (Nominal Operating Cell Temperature).*\n*   **Hotspot Criteria**: Flags module anomalies where measured module temperature sensor exceeds predicted temperature by more than 8°C (\\(T_{\\text{measured}} - T_{\\text{pred}} > 8^\\circ\\text{C}\\)).`;
-            } else if (lower.includes("how") && (lower.includes("availability") || lower.includes("curtailment") || lower.includes("daylight"))) {
-                thoughts.push("Loading daylight availability filters...");
-                responseText = `### Daylight Availability &amp; Curtailment Calculation Methodology\n\n*   **Daytime Filter**: Restricts active state classifications (Running, Standby, Grid Curtailment, Scheduled Maintenance, Fault/Trip) strictly to daylight hours where \\(POA > 50\\text{ W/m}^2\\).\n*   **Daylight Availability**:\n    \\[\\text{Availability} = \\frac{\\text{Running Hours}}{\\text{Total Daylight Hours}} \\cdot 100\\%\\]`;
-
-            // 11. Individual Asset Telemetry
-            } else if (lower.includes("mfm 12") || lower.includes("mfm12")) {
-                thoughts.push("Resolving asset B2MFM12...");
-                thoughts.push("Querying latest active power records...");
-                responseText = `### Telemetry Insights — B2MFM12\n\n*   **Asset ID**: \`JAMNAGAR_VIRTUAL_GATEWAY_B2MFM12\`\n*   **Latest Active Power**: **342.5 kW**\n*   **Voltage (R-Phase)**: **415.6 V**\n*   **Current**: **820 A**\n*   **Status**: **Online**`;
-                chart = {
-                    type: "line",
-                    title: "Active Power Trend — B2MFM12",
-                    description: "Plots the active power (kW) trend over recent time intervals for meter B2MFM12.",
-                    data: {
-                        labels: ["16:10", "16:15", "16:20", "16:25", "16:30"],
-                        datasets: [{
-                            label: "Active Power (kW)",
-                            data: [310, 318, 325, 335, 342.5],
-                            borderColor: "#0989b1",
-                            backgroundColor: "rgba(9,137,177,0.12)",
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    }
-                };
-            } else if (lower.includes("pcs1") || lower.includes("pcs 1") || lower.includes("b1pcs1")) {
-                thoughts.push("Resolving asset B1PCS1...");
-                thoughts.push("Querying latest active power records...");
-                responseText = `### Telemetry Insights — B1PCS1\n\n*   **Asset ID**: \`JAMNAGAR_VIRTUAL_GATEWAY_B1PCS1\`\n*   **Latest Active Power**: **1,250 kW**\n*   **Status**: **Online**`;
-                chart = {
-                    type: "line",
-                    title: "Active Power Trend — B1PCS1",
-                    description: "Plots the active power (kW) trend over recent time intervals for PCS B1PCS1.",
-                    data: {
-                        labels: ["16:10", "16:15", "16:20", "16:25", "16:30"],
-                        datasets: [{
-                            label: "Active Power (kW)",
-                            data: [1100, 1150, 1190, 1220, 1250],
-                            borderColor: "#4ab5c4",
-                            backgroundColor: "rgba(74,181,196,0.12)",
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    }
-                };
-            } else if (lower.includes("dccon1") || lower.includes("dccon 1") || lower.includes("b2dccon1")) {
-                thoughts.push("Resolving asset B2DCCON1...");
-                thoughts.push("Querying latest voltage records...");
-                responseText = `### Telemetry Insights — B2DCCON1\n\n*   **Asset ID**: \`JAMNAGAR_VIRTUAL_GATEWAY_B2DCCON1\`\n*   **Input Voltage**: **620 V**\n*   **Active Power**: **45.2 kW**\n*   **Status**: **Online**`;
-                chart = {
-                    type: "line",
-                    title: "Input Voltage Trend — B2DCCON1",
-                    description: "Plots the input voltage (V) trend over recent time intervals for DCCON B2DCCON1.",
-                    data: {
-                        labels: ["16:10", "16:15", "16:20", "16:25", "16:30"],
-                        datasets: [{
-                            label: "Input Voltage (V)",
-                            data: [610, 615, 612, 618, 620],
-                            borderColor: "#4ab5c4",
-                            backgroundColor: "rgba(74,181,196,0.12)",
-                            fill: true,
-                            tension: 0.4
-                        }]
-                    }
-                };
-            } else if (lower.includes("wms1") || lower.includes("wms 1") || lower.includes("ppcwms1") || lower.includes("meteorological")) {
-                thoughts.push("Resolving asset PPCWMS1...");
-                thoughts.push("Querying latest temperature logs...");
-                responseText = `### Telemetry Insights — PPCWMS1 (Meteorological Station)\n\n*   **Asset ID**: \`JAMNAGAR_VIRTUAL_GATEWAY_PPCWMS1\`\n*   **Ambient Temperature**: **34.8 °C**\n*   **Module Temperature**: **45.2 °C**\n*   **POA Irradiance**: **488 W/m²**\n*   **Status**: **Online**`;
-                chart = {
-                    type: "line",
-                    title: "Ambient vs Module Temp (°C)",
-                    description: "Plots ambient vs module temperature sensor trends over recent intervals.",
-                    data: {
-                        labels: ["16:10", "16:15", "16:20", "16:25", "16:30"],
-                        datasets: [{
-                            label: "Ambient Temp",
-                            data: [34.88, 34.84, 34.85, 34.81, 34.82],
-                            borderColor: "#8ab833",
-                            fill: false
-                        }, {
-                            label: "Module Temp",
-                            data: [44.5, 44.8, 45.0, 45.1, 45.2],
-                            borderColor: "#ef4444",
-                            fill: false
-                        }]
-                    }
-                };
-            } else if (lower.includes("list assets") || lower.includes("all assets") || lower.includes("assets by type") || lower.includes("show all meters")) {
-                thoughts.push("Querying active Jamnagar Solar assets list...");
-                responseText = `### Jamnagar Solar Facility — Active Assets Grouped by Type\n\n*   **Batteries (7 BESS Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT2\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT3\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2BCT1\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2BCT2\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2BCT3\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B3BCT2\`\n*   **Inverters (2 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1INV1\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B3INV1\`\n*   **Power Meters (MFM — 19 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1MFM1\` (Grid-tie), \`B1MFM2\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2MFM1\` through \`B2MFM16\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B3MFM1\`, \`B3MFM2\`, \`B3MFM3\`\n*   **PCS (Power Conversion System — 3 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1PCS1\`, \`B2PCS1\`, \`B3PCS1\`\n*   **DC Converters (3 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2DCCON1\`, \`B2DCCON2\`, \`B2DCCON3\`\n*   **Weather Stations (1 WMS Unit)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_PPCWMS1\``;
-
-            } else if (lower.includes("rte") || lower.includes("round trip efficiency")) {
-                thoughts.push("Fetching BESS Round-Trip Efficiency metrics...");
-                responseText = "BESS Round-Trip Efficiency (RTE) is currently 87.3%. Status is Normal.";
-                chart = { type: "doughnut", data: { labels: ["RTE", "Losses"], datasets: [{ data: [87.3, 12.7], backgroundColor: ["#22c55e","#ef4444"] }] } };
-            } else if (lower.includes("uptime") || lower.includes("ens") || lower.includes("energy not supplied")) {
-                thoughts.push("Calculating System Uptime and Energy Not Supplied...");
-                responseText = "System Uptime is 99.2%. Estimated Energy Not Supplied (ENS) is 0.8 MWh.";
-                chart = { type: "doughnut", data: { labels: ["Uptime", "Downtime"], datasets: [{ data: [99.2, 0.8], backgroundColor: ["#22c55e","#f59e0b"] }] } };
-            } else if (lower.includes("tracker") || lower.includes("misalignment")) {
-                thoughts.push("Analyzing tracker alignment data...");
-                responseText = "Detected tracker misalignment resulting in 125 kWh loss. Affected trackers: B1PCS1_TRK1, B2PCS1_TRK4.";
-                chart = { type: "bar", data: { labels: ["B1PCS1_TRK1", "B2PCS1_TRK4"], datasets: [{ label: "Loss (kWh)", data: [80, 45], backgroundColor: "#f59e0b" }] } };
-            } else if (lower.includes("soiling roi") || lower.includes("cleaning roi") || lower.includes("when to clean") || lower.includes("wash")) {
-                thoughts.push("Running Soiling ROI Planner...");
-                responseText = "It has been 12 days since the last cleaning. Cumulative dust loss is Rs 45,000. Tipping point is 15 days. Current cleaning ROI is 180%.";
-                chart = { type: "bar", data: { labels: ["Cleaning Cost", "Cumulative Dust Loss"], datasets: [{ label: "Cost / Loss (Rs)", data: [25000, 45000], backgroundColor: ["rgba(9,137,177,0.75)", "rgba(239,68,68,0.75)"] }] } };
-            } else if (lower.includes("forecast") || lower.includes("dispatch schedule") || lower.includes("bess schedule") || lower.includes("day-ahead")) {
-                thoughts.push("Simulating day-ahead generation and BESS dispatch...");
-                responseText = "24-hour Day-Ahead Generation and BESS Dispatch Schedule generated successfully.";
-                chart = { type: "line", data: { labels: ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"], datasets: [ {label:"Generation", data:[0,0,500,2000,500,0], yAxisID:"y"}, {label:"BESS Dispatch", data:[-500,-500,0,500,500,-500], yAxisID:"y"}, {label:"SOC %", data:[80,50,50,90,70,50], yAxisID:"y1"} ] } };
-
-            // 12. Custom / General SQL simulation
-            } else if (lower.includes("sql") || lower.includes("select")) {
-                thoughts.push("Executing custom SQL query simulation...");
-                responseText = `**SQL Query Results:**\n\`\`\`json\n[\n  {"device_group": "WEATHER", "count": 2400},\n  {"device_group": "INVERTER", "count": 4800},\n  {"device_group": "BESS", "count": 16800},\n  {"device_group": "METER", "count": 50400}\n]\n\`\`\``;
-
-            // 13. Capabilities & Calculation methodology questions
-            } else if (lower.includes("what can you do") || lower.includes("capabilities") || lower.includes("help") || lower.includes("how do you") || lower.includes("how does") || lower.includes("how is") || lower.includes("methodology") || lower.includes("calculate") || lower.includes("calibrate")) {
-                thoughts.push("Loading capabilities and calculation methodology...");
-                responseText = `### JioSunGenie eAnalytiX Capabilities &amp; Methodology\n\nI am a telemetry-calibrated O&amp;M assistant, calibrated on **8 active ML pipelines** and directly connected to the Jamnagar SQLite database.\n\n#### 🛠️ Core Capabilities\n1. **PR Gap Loss Attribution**: Calculates performance ratio and breaks down losses (Soiling, Shading, Hardware, Grid Curtailment).\n2. **String Outlier Check (SCB)**: Uses Z-score calculations to detect faulty/underperforming solar strings.\n3. **Unsupervised Soiling Loss Calibration**: Estimates daily dust accumulation rates using change-point analysis of panel washing cycles.\n4. **BESS Health Monitor (SoH)**: Calculates coulombic efficiency and estimates BESS capacity wear over cycles.\n5. **Inverter DC-AC Efficiency**: Bins conversion efficiency by load factor to spot underperforming units.\n6. **Irradiance-Power Correlation**: Computes POA R² and detects power clipping.\n7. **Thermal Hotspot Detection**: Flags module anomalies by comparing measured temperature to the NOCT cell temperature model.\n8. **Daylight Availability &amp; Curtailment**: Calculates availability restricted to active daylight windows (POA &gt; 50 W/m²).\n\n#### 🧮 Mathematical Formulas &amp; Models\n*   **Performance Ratio**: \\(PR = \\frac{E_{\\text{actual}}}{E_{\\text{expected}}}\\)\n*   **Expected Power**: \\(P_{\\text{exp}} = \\text{Capacity} \\cdot \\left(\\frac{\\text{POA}}{1000}\\right) \\cdot (1 - 0.004 \\cdot (T_{\\text{mod}} - 25)) \\cdot \\text{LossFactor}\\)\n*   **String Current Z-Score**: \\(Z_i = \\frac{x_i - \\mu}{\\sigma}\\) (anomalies flagged when \\(Z_i &lt; -2.0\\))\n*   **BESS Coulombic Efficiency**: \\(\\eta_C = \\frac{\\sum |I_{\\text{discharge}}|}{\\sum |I_{\\text{charge}}|}\\)\n*   **Predicted Module Temp**: \\(T_{\\text{pred}} = T_{\\text{ambient}} + \\left(\\frac{\\text{NOCT} - 20}{800}\\right) \\cdot \\text{POA}\\) (hotspots flagged where \\(T_{\\text{measured}} - T_{\\text{pred}} &gt; 8^\\circ\\text{C}\\))\n\n*I use **Gemma 4 26B** as my primary reasoning model, with Nvidia Ising Calibration 35B and Gemma 3 12B as dedicated fallbacks.*`;
-
-            // Default fallback
-            } else {
-                thoughts.push("Processing query...");
-                responseText = `Hello! I am your SunGenie O&amp;M AI Agent. The local API server is currently offline or hosted in demo mode (GitHub Pages), so I am responding using my built-in JS emulator.\n\nHere are some queries I am configured to answer:\n- **Battery health**: *"What is the health and cycle count of battery B1BCT1?"*\n- **Inverter efficiency**: *"What is the inverter fleet DC-AC conversion efficiency?"*\n- **SQL queries**: *"SQL Weather data"* or any custom \`SELECT\` statement.\n\nAll calculation methodology details (PR Gap, Z-Score, Coulombic efficiency, NOCT module temperature model, and daylight availability) can be found in the repository's [Capabilities Document](https://github.com/WiseDaemon/SunGenie_YAML/blob/main/agent_capabilities.md).`;
-            }
-
-            return { response: responseText, thoughts, chart };
-        }
-
-        // Helper to simulate asset comparisons
-        function simulateComparison(lower, thoughts) {
-            let responseText = "";
-            let chart = null;
-            if (lower.includes("battery") || lower.includes("bess") || lower.includes("bct")) {
-                thoughts.push("Resolving BESS assets for comparison...");
-                thoughts.push("Fetching SOC and SoH history for comparison...");
-                responseText = `### BESS Comparison: B1BCT1 vs B2BCT1 vs B2BCT3\n\n*   **B1BCT1**: SoH = **99.4%**, Cycles = **12**, Status = **Healthy**\n*   **B2BCT1**: SoH = **98.2%**, Cycles = **120**, Status = **Healthy**\n*   **B2BCT3**: SoH = **97.8%**, Cycles = **146**, Status = **Healthy**\n\nAll units are operating within nominal thermodynamic and coulombic efficiency limits. B1BCT1 shows the lowest degradation due to its low cycle history.`;
-                chart = {
-                    type: "bar",
-                    title: "BESS State of Health Comparison (%)",
-                    description: "Compares State of Health (SoH) across multiple Battery Capacity Tracker (BCT) units.",
-                    data: {
-                        labels: ["B1BCT1", "B2BCT1", "B2BCT3"],
-                        datasets: [{
-                            label: "SoH %",
-                            data: [99.4, 98.2, 97.8],
-                            backgroundColor: ["rgba(138,184,51,0.75)", "rgba(9,137,177,0.75)", "rgba(74,181,196,0.75)"],
-                            borderRadius: 4
-                        }]
-                    },
-                    options: { scales: { y: { min: 90, max: 100 } } }
-                };
-            } else if (lower.includes("inverter") || lower.includes("inv") || lower.includes("efficiency")) {
-                thoughts.push("Resolving inverter assets...");
-                thoughts.push("Fetching efficiency metrics...");
-                responseText = `### Inverter Comparison: B1INV1 vs B3INV1\n\n*   **B1INV1**: Fleet Efficiency = **95.8%**, Status = **Normal**\n*   **B3INV1**: Fleet Efficiency = **95.4%**, Status = **Normal**\n\nBoth inverters are operating well above the 92% efficiency alert threshold, running optimal conversion stages.`;
-                chart = {
-                    type: "bar",
-                    title: "Inverter Conversion Efficiency Comparison (%)",
-                    description: "Compares aggregate conversion efficiency across all active inverters.",
-                    data: {
-                        labels: ["B1INV1", "B3INV1"],
-                        datasets: [{
-                            label: "Efficiency %",
-                            data: [95.8, 95.4],
-                            backgroundColor: ["rgba(138,184,51,0.75)", "rgba(9,137,177,0.75)"],
-                            borderRadius: 4
-                        }]
-                    },
-                    options: { scales: { y: { min: 90, max: 100 } } }
-                };
-            } else if (lower.includes("meter") || lower.includes("mfm") || lower.includes("power")) {
-                thoughts.push("Resolving MFM power meters...");
-                thoughts.push("Retrieving active power telemetry...");
-                responseText = `### Meter Power Comparison: B1MFM1 vs B3MFM2\n\n*   **B1MFM1 (Grid Tie Meter)**: Active Power = **4,150 kW**, Power Factor = **0.99**\n*   **B3MFM2 (Auxiliary Meter)**: Active Power = **380 kW**, Power Factor = **0.97**`;
-                chart = {
-                    type: "bar",
-                    title: "Active Power Comparison (kW)",
-                    description: "Compares the active power output or consumption between key power meters.",
-                    data: {
-                        labels: ["B1MFM1", "B3MFM2"],
-                        datasets: [{
-                            label: "Active Power (kW)",
-                            data: [4150, 380],
-                            backgroundColor: ["rgba(9,137,177,0.75)", "rgba(74,181,196,0.75)"],
-                            borderRadius: 4
-                        }]
-                    }
-                };
-            } else if (lower.includes("dccon") || lower.includes("converter")) {
-                thoughts.push("Resolving DC converter telemetry...");
-                thoughts.push("Comparing input voltages...");
-                responseText = `### DC Converter Comparison: B2DCCON1 vs B2DCCON2 vs B2DCCON3\n\n*   **B2DCCON1**: Input Voltage = **620 V**, Current = **15 A**\n*   **B2DCCON2**: Input Voltage = **618 V**, Current = **14.8 A**\n*   **B2DCCON3**: Input Voltage = **622 V**, Current = **15.1 A**`;
-                chart = {
-                    type: "bar",
-                    title: "DC Converter Voltage Comparison (V)",
-                    description: "Compares input voltage levels across active DC converters.",
-                    data: {
-                        labels: ["B2DCCON1", "B2DCCON2", "B2DCCON3"],
-                        datasets: [{
-                            label: "Input Voltage (V)",
-                            data: [620, 618, 622],
-                            backgroundColor: ["rgba(138,184,51,0.75)", "rgba(9,137,177,0.75)", "rgba(74,181,196,0.75)"],
-                            borderRadius: 4
-                        }]
-                    },
-                    options: { scales: { y: { min: 500, max: 700 } } }
-                };
-            } else {
-                // Default to inverter comparison
-                thoughts.push("Comparing all inverter assets...");
-                responseText = `### Inverter Comparison: B1INV1 vs B3INV1\n\n*   **B1INV1**: Fleet Efficiency = **95.8%**, Status = **Normal**\n*   **B3INV1**: Fleet Efficiency = **95.4%**, Status = **Normal**\n\nBoth inverters are operating well above the 92% efficiency alert threshold, running optimal conversion stages.`;
-                chart = {
-                    type: "bar",
-                    title: "Inverter Conversion Efficiency Comparison (%)",
-                    description: "Compares aggregate conversion efficiency across all active inverters.",
-                    data: {
-                        labels: ["B1INV1", "B3INV1"],
-                        datasets: [{
-                            label: "Efficiency %",
-                            data: [95.8, 95.4],
-                            backgroundColor: ["rgba(138,184,51,0.75)", "rgba(9,137,177,0.75)"],
-                            borderRadius: 4
-                        }]
-                    },
-                    options: { scales: { y: { min: 90, max: 100 } } }
-                };
-            }
-            return { response: responseText, thoughts, chart };
-        }
-
-        async function submitFeedback(msgId, rating) {
-            const msgDiv = document.getElementById(msgId);
-            if (!msgDiv) return;
-            const prompt = msgDiv.getAttribute('data-prompt') || '';
-            const response = msgDiv.getAttribute('data-response') || '';
-            const label = prompt.toLowerCase().includes('sql') ? 'SQL Generation' : 'General';
-            
-            try {
-                const res = await fetch('/api/feedback', {
-                    method: 'POST',
-                    headers: apiHeaders({ 'Content-Type': 'application/json' }),
-                    body: JSON.stringify({ prompt, response, rating, label })
-                });
-                if (res.ok) {
-                    const status = document.getElementById('fb-status-' + msgId);
-                    status.style.display = 'inline';
-                    status.innerText = 'Thanks for the feedback!';
-                }
-            } catch (err) {
-                console.error("Feedback failed", err);
-            }
-        }
-
-        fetchAll();
-    </script>
-</body>
-</html>
+<body class="flex h-screen w-full selection:bg-primary-container selection:text-on-primary-container">
+<!-- Global Background Elements -->
+<div class="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
+<div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary-fixed-dim/5 blur-[120px]"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary-container/5 blur-[100px]"></div>
+</div>
+<!-- SideNavBar (Desktop Only) -->
+<nav class="hidden md:flex flex-col py-6 bg-surface-container/20 backdrop-blur-2xl border-r border-white/10 shadow-2xl h-full w-20 hover:w-64 transition-all duration-500 overflow-hidden z-[60] group flex-shrink-0 fixed left-0 top-0">
+<!-- Header -->
+<div class="flex items-center px-4 mb-8 w-64">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center shrink-0 border border-white/10 shadow-[0_0_15px_rgba(42,229,0,0.2)]">
+<span class="material-symbols-outlined text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<div class="font-headline-md text-headline-md font-bold text-primary tracking-tight">eAnalytiX</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Precision Control</div>
+</div>
+</div>
+<!-- Main Nav -->
+<div class="flex-1 w-64 flex flex-col gap-2 px-3 mt-4">
+<!-- Dashboard - Active -->
+<a class="flex items-center px-3 py-3 rounded-xl transition-all ease-in-out duration-300 text-primary drop-shadow-[0_0_8px_rgba(42,229,0,0.8)] border-l-4 border-primary bg-primary/5" href="#">
+<span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="ml-4 font-label-md text-label-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Dashboard</span>
+</a>
+<!-- Analytics - Inactive -->
+<a class="flex items-center px-3 py-3 rounded-xl transition-all ease-in-out duration-300 text-on-surface-variant/60 hover:bg-white/5 hover:text-primary-fixed border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined shrink-0">monitoring</span>
+<span class="ml-4 font-label-md text-label-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Analytics</span>
+</a>
+<!-- Assets - Inactive -->
+<a class="flex items-center px-3 py-3 rounded-xl transition-all ease-in-out duration-300 text-on-surface-variant/60 hover:bg-white/5 hover:text-primary-fixed border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined shrink-0">solar_power</span>
+<span class="ml-4 font-label-md text-label-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Assets</span>
+</a>
+<!-- Grid - Inactive -->
+<a class="flex items-center px-3 py-3 rounded-xl transition-all ease-in-out duration-300 text-on-surface-variant/60 hover:bg-white/5 hover:text-primary-fixed border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined shrink-0">electric_bolt</span>
+<span class="ml-4 font-label-md text-label-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Grid</span>
+</a>
+<!-- Settings - Inactive -->
+<a class="flex items-center px-3 py-3 rounded-xl transition-all ease-in-out duration-300 text-on-surface-variant/60 hover:bg-white/5 hover:text-primary-fixed border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined shrink-0">settings</span>
+<span class="ml-4 font-label-md text-label-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Settings</span>
+</a>
+</div>
+<!-- CTA -->
+<div class="px-4 mb-4 w-64 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<button class="w-full bg-primary-container text-on-primary-container font-label-md text-label-md py-2 px-4 rounded-lg flex justify-center items-center gap-2 hover:bg-primary transition-colors shadow-[0_0_10px_rgba(57,255,20,0.3)]">
+<span class="material-symbols-outlined text-sm">terminal</span>
+                Command Center
+            </button>
+</div>
+<!-- Footer Nav -->
+<div class="w-64 flex flex-col gap-1 px-3 border-t border-white/5 pt-4">
+<a class="flex items-center px-3 py-2 rounded-xl transition-all ease-in-out duration-300 text-on-surface-variant/60 hover:bg-white/5 hover:text-primary-fixed" href="#">
+<span class="material-symbols-outlined shrink-0 text-sm">help</span>
+<span class="ml-4 font-label-sm text-label-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Support</span>
+</a>
+<a class="flex items-center px-3 py-2 rounded-xl transition-all ease-in-out duration-300 text-on-surface-variant/60 hover:bg-white/5 hover:text-error" href="#">
+<span class="material-symbols-outlined shrink-0 text-sm">logout</span>
+<span class="ml-4 font-label-sm text-label-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Logout</span>
+</a>
+</div>
+</nav>
+<!-- Main Workspace Area -->
+<main class="flex-1 ml-0 md:ml-20 mr-0 xl:mr-80 flex flex-col h-screen overflow-hidden transition-all duration-300">
+<!-- TopAppBar Contextual (Not Full Shell) -->
+<header class="h-20 flex-shrink-0 flex items-center justify-between px-gutter border-b border-white/5 glass-panel z-10 relative">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-white">Dashboard</h1>
+<div class="flex items-center gap-2 mt-1">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-fixed opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary-fixed"></span>
+</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">1.2GW Global Portfolio - Active</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-white/5 text-on-surface-variant transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-surface"></span>
+</button>
+<div class="h-8 w-px bg-white/10 mx-2"></div>
+<button class="flex items-center gap-2 bg-surface-container hover:bg-surface-container-high px-3 py-1.5 rounded-lg border border-white/10 transition-colors">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+<span class="font-label-sm text-label-sm text-on-surface">Filters</span>
+</button>
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<div class="flex-1 overflow-y-auto p-gutter custom-scrollbar pb-24 xl:pb-gutter">
+<!-- High-Level KPIs Sparklines Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-gutter">
+<!-- Yield -->
+<div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-primary-fixed/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">solar_power</span>
+<span class="font-label-sm text-label-sm uppercase">Total Yield</span>
+</div>
+<span class="text-primary-fixed font-label-sm text-label-sm flex items-center gap-1 bg-primary-fixed/10 px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[10px]">arrow_upward</span> 2.4%
+                        </span>
+</div>
+<div class="font-display-lg text-display-lg text-white glow-text">48.2 <span class="font-headline-md text-headline-md text-on-surface-variant">GWh</span></div>
+<!-- Decor Sparkline -->
+<div class="absolute bottom-0 left-0 w-full h-8 opacity-20">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 20">
+<path d="M0,20 L0,15 Q10,5 20,10 T40,15 T60,5 T80,12 T100,2 L100,20 Z" fill="#79ff5b"></path>
+</svg>
+</div>
+</div>
+<!-- PR -->
+<div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-primary-fixed/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">analytics</span>
+<span class="font-label-sm text-label-sm uppercase">Avg PR</span>
+</div>
+<span class="text-primary-fixed font-label-sm text-label-sm flex items-center gap-1 bg-primary-fixed/10 px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[10px]">arrow_upward</span> 0.8%
+                        </span>
+</div>
+<div class="font-display-lg text-display-lg text-white">82.4 <span class="font-headline-md text-headline-md text-on-surface-variant">%</span></div>
+</div>
+<!-- BESS -->
+<div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-secondary/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">battery_charging_full</span>
+<span class="font-label-sm text-label-sm uppercase">BESS Active</span>
+</div>
+<span class="text-on-surface font-label-sm text-label-sm flex items-center gap-1 bg-surface-variant px-2 py-0.5 rounded">
+                            Discharging
+                        </span>
+</div>
+<div class="font-display-lg text-display-lg text-white">124 <span class="font-headline-md text-headline-md text-on-surface-variant">MW</span></div>
+</div>
+<!-- Open Tickets -->
+<div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-error/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">assignment_late</span>
+<span class="font-label-sm text-label-sm uppercase">Critical Tickets</span>
+</div>
+<span class="text-error font-label-sm text-label-sm flex items-center gap-1 bg-error-container/50 px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[10px]">warning</span> Action Req
+                        </span>
+</div>
+<div class="font-display-lg text-display-lg text-error">7</div>
+</div>
+</div>
+<!-- Main Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- 1. PR Gap (Performance Ratio) - Wide Chart -->
+<div class="lg:col-span-2 glass-panel rounded-xl p-6 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h2 class="font-headline-md text-headline-md text-white">PR Gap Analysis</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Actual vs Expected Yield (Last 24h)</p>
+</div>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary-fixed glow-effect"></div>
+<span class="font-label-sm text-label-sm text-on-surface">Actual</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full border-2 border-secondary border-dashed"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Expected</span>
+</div>
+</div>
+</div>
+<!-- Simulated Area Chart -->
+<div class="flex-1 min-h-[250px] relative mt-4 border-b border-l border-white/10 flex items-end pt-4 pr-2">
+<div class="absolute inset-0 w-full h-full p-2"><canvas id="prGapChart"></canvas></div>
+</div>
+</div>
+<!-- 2. String SCB Outliers - Bar Chart -->
+<div class="glass-panel rounded-xl p-6 flex flex-col">
+<h2 class="font-headline-md text-headline-md text-white mb-1">String Outliers</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">Underperforming SCBs</p>
+<div class="flex-1 flex flex-col justify-end gap-3 min-h-[250px] relative border-l border-b border-white/10 p-2">
+<div class="absolute inset-0 w-full h-full p-2"><canvas id="scbChart"></canvas></div>
+</div>
+</div>
+<!-- 3. BESS Health - Radial Gauge -->
+<div class="glass-panel rounded-xl p-6 flex flex-col items-center justify-center relative overflow-hidden">
+<!-- Background Glow -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-secondary/10 rounded-full blur-[40px] pointer-events-none"></div>
+<div class="w-full flex justify-between items-start mb-2 absolute top-6 left-6 right-6">
+<h2 class="font-headline-md text-headline-md text-white">BESS SoC</h2>
+<span class="material-symbols-outlined text-secondary">battery_5_bar</span>
+</div>
+<div class="relative w-48 h-48 mt-8">
+<div class="absolute inset-0 w-full h-full p-2"><canvas id="bessChart"></canvas></div>
+</div>
+<div class="w-full flex justify-between mt-8 px-4">
+<div class="text-center">
+<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Temp</div>
+<div class="font-label-md text-label-md text-white">24°C</div>
+</div>
+<div class="text-center">
+<div class="font-label-sm text-[10px] text-on-surface-variant uppercase">Cycles</div>
+<div class="font-label-md text-label-md text-white">482</div>
+</div>
+</div>
+</div>
+<!-- 4. Critical Tickets & Thermal (Combined Area) -->
+<div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Thermal Anomalies (Placeholder for visual interest) -->
+<div class="glass-panel rounded-xl p-6 relative overflow-hidden group">
+<h2 class="font-headline-md text-headline-md text-white mb-1 relative z-10">Thermal Scan</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 relative z-10">Drone IR Survey - Block C</p>
+<!-- Abstract representation of thermal data -->
+<div class="w-full h-40 bg-surface-container rounded-lg overflow-hidden relative border border-white/5">
+<div class="absolute inset-0 w-full h-full p-2"><canvas id="thermalChart"></canvas></div>
+</div>
+</div>
+<!-- Critical Tickets List -->
+<div class="glass-panel rounded-xl p-6 flex flex-col">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-headline-md text-headline-md text-white">Active Tasks</h2>
+<button class="font-label-sm text-label-sm text-primary hover:underline">View All</button>
+</div>
+<div class="flex flex-col gap-3 flex-1 overflow-y-auto custom-scrollbar pr-2">
+<!-- Ticket 1 -->
+<div class="bg-surface/50 border border-error/30 rounded-lg p-3 hover:bg-surface transition-colors cursor-pointer border-l-2 border-l-error">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-label-md text-label-md text-white">Inverter 04 Overheating</h3>
+<span class="text-[10px] bg-error/20 text-error px-2 py-0.5 rounded font-label-sm">High</span>
+</div>
+<div class="flex items-center gap-4 mt-2 font-label-sm text-[10px] text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span> 2h ago</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">person</span> O&amp;M Team Alpha</span>
+</div>
+</div>
+<!-- Ticket 2 -->
+<div class="bg-surface/50 border border-white/5 rounded-lg p-3 hover:bg-surface transition-colors cursor-pointer border-l-2 border-l-tertiary-fixed-dim">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-label-md text-label-md text-white">String 12 Cleaning Req</h3>
+<span class="text-[10px] bg-tertiary-fixed-dim/20 text-tertiary-fixed-dim px-2 py-0.5 rounded font-label-sm">Med</span>
+</div>
+<div class="flex items-center gap-4 mt-2 font-label-sm text-[10px] text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span> 1d ago</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">cleaning_services</span> Vendor B</span>
+</div>
+</div>
+<!-- Ticket 3 -->
+<div class="bg-surface/50 border border-white/5 rounded-lg p-3 hover:bg-surface transition-colors cursor-pointer border-l-2 border-l-white/20">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-label-md text-label-md text-white">Firmware Update CB-01</h3>
+<span class="text-[10px] bg-white/10 text-white px-2 py-0.5 rounded font-label-sm">Low</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- SideNavBar (AI Assistant) - Docked Right -->
+<aside class="fixed right-0 bottom-0 z-40 flex flex-col p-4 border-l border-white/10 bg-surface-container-low/30 backdrop-blur-lg docked right-0 h-[calc(100%-64px)] w-80 mt-16 shadow-xl translate-x-full xl:translate-x-0 transition-transform duration-300" id="ai-panel">
+<!-- Mobile Toggle (Visible < xl) -->
+<button class="xl:hidden absolute -left-12 top-4 bg-secondary-container text-on-secondary-container p-2 rounded-l-lg shadow-lg" onclick="document.getElementById('ai-panel').classList.toggle('translate-x-full')">
+<span class="material-symbols-outlined">smart_toy</span>
+</button>
+<!-- Header -->
+<div class="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center border border-secondary/30 relative">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<div class="absolute bottom-0 right-0 w-3 h-3 bg-primary-fixed rounded-full border-2 border-surface-container-low"></div>
+</div>
+<div>
+<h2 class="font-label-md text-label-md text-secondary">Solar AI</h2>
+<p class="font-label-sm text-[10px] text-on-surface-variant">Active Analysis</p>
+</div>
+<button class="ml-auto text-on-surface-variant hover:text-white transition-colors">
+<span class="material-symbols-outlined text-sm">more_vert</span>
+</button>
+</div>
+<!-- Chat History -->
+<div id="chat-messages" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pr-2 font-body-md text-body-md scroll-smooth mb-4">
+<div class="flex flex-col gap-1 max-w-[90%]">
+<span class="font-label-sm text-[10px] text-on-surface-variant ml-2">Solar AI</span>
+<div class="bg-secondary-container text-on-secondary-container rounded-xl rounded-tl-sm p-3 shadow-md markdown-content">
+    Initializing SunGenie Core... Ready for telemetry queries.
+</div>
+</div>
+</div>
+<!-- Input Area -->
+<div class="mt-auto relative">
+<input id="chat-input" class="w-full bg-surface-container border-0 border-b border-white/20 focus:border-primary-fixed focus:ring-0 text-white font-body-md text-sm py-3 pl-4 pr-12 transition-colors rounded-t-lg" placeholder="Ask AI to analyze data..." type="text"/>
+<button id="send-btn" class="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-primary-fixed transition-colors p-1 bg-primary/10 rounded-full">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</aside>
+</body></html>
