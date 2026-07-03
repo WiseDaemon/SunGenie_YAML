@@ -1,7 +1,9 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JioSunGenie SunGenie Platform - AI/ML Solar Portal</title>
+    <title>JioSunGenie Platform - AI/ML Solar Portal</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
@@ -27,7 +29,7 @@
             background-color: #0A0C10;
             color: #e2e2e8;
             font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
+            overflow: hidden;
         }
         .glass-panel {
             background: linear-gradient(135deg, rgba(30, 32, 36, 0.45) 0%, rgba(30, 32, 36, 0.15) 100%);
@@ -73,7 +75,8 @@
         .markdown-content ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; font-size: 0.85rem; }
         .markdown-content code { background-color: rgba(255,255,255,0.1); padding: 0.1rem 0.3rem; border-radius: 4px; font-family: monospace; font-size: 0.8rem; }
     </style>
-</head><body class="flex h-screen w-full selection:bg-[#39ff14]/30 selection:text-white overflow-hidden">
+</head>
+<body class="flex h-screen w-full selection:bg-[#39ff14]/30 selection:text-white overflow-hidden">
 <!-- Global Background Glows -->
 <div class="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
     <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#39ff14]/5 blur-[120px]"></div>
@@ -87,7 +90,7 @@
             <span class="material-symbols-outlined text-[#39ff14]" style="font-variation-settings: 'FILL' 1;">bolt</span>
         </div>
         <div class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div class="font-headline-md text-lg font-bold text-[#39ff14] tracking-tight">SunGenie Platform</div>
+            <div class="font-headline-md text-lg font-bold text-[#39ff14] tracking-tight">SunGenie</div>
             <div class="text-[10px] text-gray-400 uppercase tracking-wider">Precision Control</div>
         </div>
     </div>
@@ -116,7 +119,7 @@
     <!-- Header -->
     <header class="h-20 flex-shrink-0 flex items-center justify-between px-8 border-b border-white/5 bg-[#0c0e12]/20 backdrop-blur-md relative z-10">
         <div>
-            <h1 class="text-xl font-bold text-white tracking-tight">SunGenie SunGenie Platform</h1>
+            <h1 class="text-xl font-bold text-white tracking-tight">SunGenie Platform</h1>
             <div class="flex items-center gap-2 mt-1">
                 <span class="relative flex h-2 w-2">
                     <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#39ff14] opacity-75"></span>
@@ -128,11 +131,12 @@
         
         <!-- Controls area -->
         <div class="flex items-center gap-4">
-            <select id="timeframe-select" class="bg-[#1e2024] border border-white/10 text-white rounded-lg text-xs py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#39ff14] cursor-pointer">
+            <!-- FIXED DATE FILTER TRIGGER: onchange="onTimeframeChange()" -->
+            <select id="timeframe-select" onchange="onTimeframeChange()" class="bg-[#1e2024] border border-white/10 text-white rounded-lg text-xs py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#39ff14] cursor-pointer">
                 <option value="live">Live (All Data)</option>
                 <option value="today">Today (June 24)</option>
                 <option value="yesterday">Yesterday (June 23/24)</option>
-                <option value="week">Last 7 Days</option>
+                <option value="week" selected>Last 7 Days</option>
                 <option value="custom">Custom Range</option>
             </select>
             <div id="custom-range-inputs" class="hidden items-center gap-2">
@@ -146,236 +150,225 @@
 
     <!-- Scrollable Workspace Dashboard -->
     <div class="flex-1 overflow-y-auto p-8 custom-scrollbar pb-24">
-        <!-- Dashboard View -->
-        <div id="dashboard-view" class="view-content active">
-        <!-- KPI Grid 1 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <!-- Expected vs Actual -->
-            <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Expected vs Actual</div>
-                <div id="kpi-gen" class="text-xl font-bold text-white">--- / ---</div>
-                <div id="kpi-gen-sub" class="text-xs text-[#39ff14] font-semibold mt-2">Gap: --- kWh</div>
-            </div>
-            <!-- Performance Ratio -->
-            <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Performance Ratio</div>
-                <div id="kpi-pr" class="text-xl font-bold text-white">0.---</div>
-                <div class="text-xs text-[#029676] font-semibold mt-2">Target: 0.85</div>
-            </div>
-            <!-- Inverter Efficiency -->
-            <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Inverter Efficiency</div>
-                <div id="kpi-eff" class="text-xl font-bold text-white">--.- %</div>
-                <div id="kpi-eff-sub" class="text-xs text-[#4AB5C4] font-semibold mt-2">Fleet Average</div>
-            </div>
-            <!-- Plant Availability -->
-            <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Plant Availability</div>
-                <div id="kpi-avail" class="text-xl font-bold text-white">--.- %</div>
-                <div id="kpi-avail-sub" class="text-xs text-[#f59e0b] font-semibold mt-2">Curtailment: -- h</div>
-            </div>
-        </div>
-
-        <!-- KPI Grid 2 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <!-- BESS Health -->
-            <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">BESS Health (SoH)</div>
-                <div id="kpi-bess" class="text-xl font-bold text-white">--.- %</div>
-                <div id="kpi-bess-sub" class="text-xs text-[#39ff14] font-semibold mt-2">Cycles: --</div>
-            </div>
-            <!-- Daily Soiling Rate -->
-            <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Daily Soiling Rate</div>
-                <div id="kpi-soiling" class="text-xl font-bold text-white">-.--- %</div>
-                <div id="kpi-soiling-sub" class="text-xs text-[#ef4444] font-semibold mt-2">Loss Trend</div>
-            </div>
-            <!-- Thermal Anomalies -->
-            <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Thermal Anomalies</div>
-                <div id="kpi-thermal" class="text-xl font-bold text-white">--</div>
-                <div id="kpi-thermal-sub" class="text-xs text-[#f59e0b] font-semibold mt-2">Max Delta: -- °C</div>
-            </div>
-            <!-- Irradiance R2 -->
-            <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Irradiance R²</div>
-                <div id="kpi-r2" class="text-xl font-bold text-white">0.---</div>
-                <div id="kpi-r2-sub" class="text-xs text-[#029676] font-semibold mt-2">POA Correlation</div>
-            </div>
-        </div>
-
-        <!-- Tabs Header -->
-        <div class="flex gap-4 border-b border-white/5 mb-6">
-            <button id="tab-btn-diagnostics" class="tab-btn active border-b-2 border-transparent pb-2 font-semibold text-sm transition-all hover:text-white" onclick="switchTab('diagnostics')">Telemetry & Diagnostics</button>
-            <button id="tab-btn-forecast" class="tab-btn border-b-2 border-transparent pb-2 font-semibold text-sm transition-all hover:text-white" onclick="switchTab('forecast')">Day-Ahead Forecast & BESS Dispatch</button>
-        </div>
-
-        <!-- Tab 1: Diagnostics -->
-        <div id="tab-diagnostics" class="tab-content active mb-6">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Chart 1: PR Gap -->
-                <div class="glass-panel rounded-xl p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">PR Gap Loss Attribution</h3>
-                        <span class="text-[10px] bg-[#39ff14]/10 text-[#39ff14] border border-[#39ff14]/30 px-2 py-0.5 rounded uppercase font-semibold">ML Model</span>
-                    </div>
-                    <div class="relative w-full h-[220px]"><canvas id="prGapChart"></canvas></div>
+        
+        <!-- ==================== DASHBOARD VIEW ==================== -->
+        <div id="dashboard-view" class="view-content active space-y-6">
+            <!-- KPI Grid 1 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Expected vs Actual -->
+                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Expected vs Actual</div>
+                    <div id="kpi-gen" class="text-xl font-bold text-white">--- / ---</div>
+                    <div id="kpi-gen-sub" class="text-xs text-[#39ff14] font-semibold mt-2">Gap: --- kWh</div>
                 </div>
-                <!-- Chart 2: Inverter Efficiency -->
-                <div class="glass-panel rounded-xl p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Inverter Efficiency Curve</h3>
-                        <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">Load Analysis</span>
-                    </div>
-                    <div class="relative w-full h-[220px]"><canvas id="effCurveChart"></canvas></div>
+                <!-- Performance Ratio -->
+                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Performance Ratio</div>
+                    <div id="kpi-pr" class="text-xl font-bold text-white">0.---</div>
+                    <div class="text-xs text-[#029676] font-semibold mt-2">Target: 0.85</div>
                 </div>
-                <!-- Chart 3: Irradiance-Power Scatter -->
-                <div class="glass-panel rounded-xl p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Irradiance vs Power Output</h3>
-                        <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">Correlation</span>
-                    </div>
-                    <div class="relative w-full h-[220px]"><canvas id="irradianceChart"></canvas></div>
+                <!-- BESS Health -->
+                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">BESS Health (SoH)</div>
+                    <div id="kpi-bess" class="text-xl font-bold text-white">--.- %</div>
+                    <div id="kpi-bess-sub" class="text-xs text-[#39ff14] font-semibold mt-2">Cycles: --</div>
                 </div>
-                <!-- Chart 4: Operating State -->
-                <div class="glass-panel rounded-xl p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Operating State Breakdown</h3>
-                        <span class="text-[10px] bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b]/30 px-2 py-0.5 rounded uppercase font-semibold">Grid Analysis</span>
-                    </div>
-                    <div class="relative w-full h-[220px]"><canvas id="curtailmentChart"></canvas></div>
+                <!-- Thermal Anomalies -->
+                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Thermal Anomalies</div>
+                    <div id="kpi-thermal" class="text-xl font-bold text-white">--</div>
+                    <div id="kpi-thermal-sub" class="text-xs text-[#f59e0b] font-semibold mt-2">Max Delta: -- °C</div>
                 </div>
             </div>
-        </div>
 
-        <!-- Tab 2: Forecast -->
-        <div id="tab-forecast" class="tab-content mb-6">
+            <!-- Single dashboard main chart -->
             <div class="glass-panel rounded-xl p-6 flex flex-col">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">24-Hour Day-Ahead & Battery Dispatch Forecast</h3>
-                    <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">BESS Dispatch</span>
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">PR Gap Loss Attribution</h3>
+                    <span class="text-[10px] bg-[#39ff14]/10 text-[#39ff14] border border-[#39ff14]/30 px-2 py-0.5 rounded uppercase font-semibold">ML Model</span>
                 </div>
-                <div class="relative w-full h-[280px]"><canvas id="forecastChart"></canvas></div>
+                <div class="relative w-full h-[250px]"><canvas id="prGapChart"></canvas></div>
+            </div>
+
+            <!-- Bottom panels -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Panel 1: SCB Outliers -->
+                <div class="glass-panel rounded-xl p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">String Combiner (SCB) Outliers</h3>
+                        <span class="text-[10px] bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/30 px-2 py-0.5 rounded uppercase font-semibold">Z-Score</span>
+                    </div>
+                    <div class="overflow-y-auto max-h-[180px] custom-scrollbar">
+                        <table class="w-full text-left text-xs border-collapse" id="scb-outliers-table">
+                            <thead>
+                                <tr class="border-b border-white/10 text-gray-400">
+                                    <th class="pb-2 font-semibold">String</th>
+                                    <th class="pb-2 font-semibold">Current (A)</th>
+                                    <th class="pb-2 font-semibold">Z-Score</th>
+                                    <th class="pb-2 font-semibold">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-white">
+                                <tr><td colspan="4" class="text-center py-4 text-gray-500">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Panel 2: Soiling ROI -->
+                <div class="glass-panel rounded-xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-bold text-white uppercase tracking-wider">Soiling ROI Planner</h3>
+                            <span class="text-[10px] bg-[#39ff14]/10 text-[#39ff14] border border-[#39ff14]/30 px-2 py-0.5 rounded uppercase font-semibold">Cleaning ROI</span>
+                        </div>
+                        <div class="text-xs text-gray-400 space-y-2">
+                            <div class="flex justify-between"><span>Last Washed:</span><span id="roi-last-clean" class="text-white font-semibold">---</span></div>
+                            <div class="flex justify-between"><span>Days Elapsed:</span><span id="roi-days-elapsed" class="text-white font-semibold">---</span></div>
+                            <div class="flex justify-between text-sm pt-2"><span>Cumulative Loss:</span><span id="roi-loss-inr" class="text-[#f59e0b] font-bold">₹---</span></div>
+                            
+                            <!-- Progress bar container -->
+                            <div class="w-full h-2.5 bg-white/5 rounded-full overflow-hidden my-2 relative">
+                                <div id="roi-progress-bar" class="h-full bg-gradient-to-r from-[#39ff14] to-[#ef4444] rounded-full transition-all duration-500" style="width: 0%;"></div>
+                            </div>
+                            <div class="flex justify-between text-[10px] text-gray-500">
+                                <span>Clean Status</span>
+                                <span>Threshold: ₹15,000</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="roi-recommendation" class="text-xs font-semibold p-2.5 rounded-lg text-center bg-white/5 mt-4 text-gray-200">
+                        Loading ROI analysis...
+                    </div>
+                </div>
+
+                <!-- Panel 3: Reports / Recommendations -->
+                <div class="glass-panel rounded-xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-bold text-white uppercase tracking-wider">O&M Recommendations</h3>
+                            <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">Reporting</span>
+                        </div>
+                        <div id="om-summary-box" class="text-xs text-gray-400 leading-relaxed max-h-[100px] overflow-y-auto custom-scrollbar">
+                            Loading diagnostics...
+                        </div>
+                    </div>
+                    <div class="border-t border-white/5 pt-4 flex gap-2 items-center">
+                        <select id="report-format-select" class="bg-[#1e2024] border border-white/10 text-white rounded-lg text-xs py-1.5 px-3 focus:outline-none cursor-pointer">
+                            <option value="csv">CSV Spreadsheet</option>
+                            <option value="html">HTML Webpage</option>
+                        </select>
+                        <button onclick="downloadReport()" class="flex-1 bg-[#39ff14] text-[#0A0C10] font-bold py-1.5 px-4 rounded-lg text-xs hover:bg-[#39ff14]/80 transition-colors shadow-[0_0_10px_rgba(57,255,20,0.3)]">
+                            Generate & Download
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Bottom panels -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Panel 1: SCB Outliers -->
-            <div class="glass-panel rounded-xl p-6 flex flex-col">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">String Combiner (SCB) Outliers</h3>
-                    <span class="text-[10px] bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/30 px-2 py-0.5 rounded uppercase font-semibold">Z-Score</span>
+        <!-- ==================== ANALYTICS VIEW ==================== -->
+        <div id="analytics-view" class="view-content hidden space-y-6">
+            <!-- KPI Row 2 from old layout -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Inverter Efficiency -->
+                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Inverter Efficiency</div>
+                    <div id="kpi-eff" class="text-xl font-bold text-white">--.- %</div>
+                    <div id="kpi-eff-sub" class="text-xs text-[#4AB5C4] font-semibold mt-2">Fleet Average</div>
                 </div>
-                <div class="overflow-y-auto max-h-[180px] custom-scrollbar">
-                    <table class="w-full text-left text-xs border-collapse" id="scb-outliers-table">
-                        <thead>
-                            <tr class="border-b border-white/10 text-gray-400">
-                                <th class="pb-2 font-semibold">String</th>
-                                <th class="pb-2 font-semibold">Current (A)</th>
-                                <th class="pb-2 font-semibold">Z-Score</th>
-                                <th class="pb-2 font-semibold">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-white">
-                            <tr><td colspan="4" class="text-center py-4 text-gray-500">Loading...</td></tr>
-                        </tbody>
-                    </table>
+                <!-- Plant Availability -->
+                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Plant Availability</div>
+                    <div id="kpi-avail" class="text-xl font-bold text-white">--.- %</div>
+                    <div id="kpi-avail-sub" class="text-xs text-[#f59e0b] font-semibold mt-2">Curtailment: -- h</div>
                 </div>
-            </div>
-
-            <!-- Panel 2: Soiling ROI -->
-            <div class="glass-panel rounded-xl p-6 flex flex-col justify-between">
-                <div>
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Soiling ROI Planner</h3>
-                        <span class="text-[10px] bg-[#39ff14]/10 text-[#39ff14] border border-[#39ff14]/30 px-2 py-0.5 rounded uppercase font-semibold">Cleaning ROI</span>
-                    </div>
-                    <div class="text-xs text-gray-400 space-y-2">
-                        <div class="flex justify-between"><span>Last Washed:</span><span id="roi-last-clean" class="text-white font-semibold">---</span></div>
-                        <div class="flex justify-between"><span>Days Elapsed:</span><span id="roi-days-elapsed" class="text-white font-semibold">---</span></div>
-                        <div class="flex justify-between text-sm pt-2"><span>Cumulative Loss:</span><span id="roi-loss-inr" class="text-[#f59e0b] font-bold">₹---</span></div>
-                        
-                        <!-- Progress bar container -->
-                        <div class="w-full h-2.5 bg-white/5 rounded-full overflow-hidden my-2 relative">
-                            <div id="roi-progress-bar" class="h-full bg-gradient-to-r from-[#39ff14] to-[#ef4444] rounded-full transition-all duration-500" style="width: 0%;"></div>
-                        </div>
-                        <div class="flex justify-between text-[10px] text-gray-500">
-                            <span>Clean Status</span>
-                            <span>Threshold: ₹15,000</span>
-                        </div>
-                    </div>
+                <!-- Daily Soiling Rate -->
+                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Daily Soiling Rate</div>
+                    <div id="kpi-soiling" class="text-xl font-bold text-white">-.--- %</div>
+                    <div id="kpi-soiling-sub" class="text-xs text-[#ef4444] font-semibold mt-2">Loss Trend</div>
                 </div>
-                <div id="roi-recommendation" class="text-xs font-semibold p-2.5 rounded-lg text-center bg-white/5 mt-4 text-gray-200">
-                    Loading ROI analysis...
+                <!-- Irradiance R2 -->
+                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
+                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Irradiance R²</div>
+                    <div id="kpi-r2" class="text-xl font-bold text-white">0.---</div>
+                    <div id="kpi-r2-sub" class="text-xs text-[#029676] font-semibold mt-2">POA Correlation</div>
                 </div>
             </div>
 
-            <!-- Panel 3: Reports / Recommendations -->
-            <div class="glass-panel rounded-xl p-6 flex flex-col justify-between">
-                <div>
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">O&M Recommendations</h3>
-                        <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">Reporting</span>
+            <!-- Tabbed Analytics Content (rest of the charts) -->
+            <div class="flex gap-4 border-b border-white/5">
+                <button id="tab-btn-diagnostics" class="tab-btn active border-b-2 border-transparent pb-2 font-semibold text-xs tracking-wider uppercase transition-all" onclick="switchTab('diagnostics')">Diagnostics & Conversion</button>
+                <button id="tab-btn-forecast" class="tab-btn border-b-2 border-transparent pb-2 font-semibold text-xs tracking-wider uppercase transition-all" onclick="switchTab('forecast')">BESS Dispatch Schedule</button>
+            </div>
+
+            <!-- Tab 1: Diagnostics (3 charts) -->
+            <div id="tab-diagnostics" class="tab-content active">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="glass-panel rounded-xl p-6 flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Inverter Conversion Curves</h3>
+                            <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">Load Analysis</span>
+                        </div>
+                        <div class="relative w-full h-[220px]"><canvas id="effCurveChart"></canvas></div>
                     </div>
-                    <div id="om-summary-box" class="text-xs text-gray-400 leading-relaxed max-h-[100px] overflow-y-auto custom-scrollbar">
-                        Loading diagnostics...
+                    <div class="glass-panel rounded-xl p-6 flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Irradiance vs Power Scatter</h3>
+                            <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">Correlation</span>
+                        </div>
+                        <div class="relative w-full h-[220px]"><canvas id="irradianceChart"></canvas></div>
+                    </div>
+                    <div class="glass-panel rounded-xl p-6 flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Operating States Breakdown</h3>
+                            <span class="text-[10px] bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b]/30 px-2 py-0.5 rounded uppercase font-semibold">Grid Analysis</span>
+                        </div>
+                        <div class="relative w-full h-[220px]"><canvas id="curtailmentChart"></canvas></div>
                     </div>
                 </div>
-                <div class="border-t border-white/5 pt-4 flex gap-2 items-center">
-                    <select id="report-format-select" class="bg-[#1e2024] border border-white/10 text-white rounded-lg text-xs py-1.5 px-3 focus:outline-none cursor-pointer">
-                        <option value="csv">CSV Spreadsheet</option>
-                        <option value="html">HTML Webpage</option>
-                    </select>
-                    <button onclick="downloadReport()" class="flex-1 bg-[#39ff14] text-[#0A0C10] font-bold py-1.5 px-4 rounded-lg text-xs hover:bg-[#39ff14]/80 transition-colors shadow-[0_0_10px_rgba(57,255,20,0.3)]">
-                        Generate & Download
-                    </button>
+            </div>
+
+            <!-- Tab 2: Forecast -->
+            <div id="tab-forecast" class="tab-content">
+                <div class="glass-panel rounded-xl p-6 flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">24-Hour Optimization & BESS Dispatch</h3>
+                        <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">BESS Dispatch</span>
+                    </div>
+                    <div class="relative w-full h-[280px]"><canvas id="forecastChart"></canvas></div>
                 </div>
             </div>
         </div>
-    </div>
 
-        </div> <!-- End Dashboard View -->
-
-        <!-- Analytics View -->
-        <div id="analytics-view" class="view-content hidden">
-            <div class="glass-panel rounded-xl p-6 mb-6">
-                <h2 class="text-xl font-bold text-white mb-2">Performance Analytics</h2>
-                <p class="text-xs text-gray-400">Detailed overview of plant-level ML calibrations and statistical distributions.</p>
+        <!-- ==================== ASSETS VIEW ==================== -->
+        <div id="assets-view" class="view-content hidden space-y-6">
+            <div class="glass-panel rounded-xl p-6">
+                <h2 class="text-xl font-bold text-white mb-2">Solar Plant Assets</h2>
+                <p class="text-xs text-gray-400">Comparison diagnostics for Jamnagar Block 1 & 2 active hardware units.</p>
             </div>
             
+            <!-- Comparison Charts Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 1: Inverters comparison -->
                 <div class="glass-panel rounded-xl p-6 flex flex-col">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Analytical Insights</h3>
-                    <p class="text-xs text-gray-400 leading-relaxed mb-4">
-                        The analytics console provides access to cross-correlation matrices between Plane-of-Array (POA) irradiance sensors and inverter conversion thresholds.
-                    </p>
-                    <div class="bg-white/5 border border-white/10 rounded-lg p-4 text-xs space-y-2">
-                        <div class="flex justify-between"><span>Fleet R² Variance:</span><span class="text-[#39ff14] font-semibold">0.942 - 0.985</span></div>
-                        <div class="flex justify-between"><span>Clipping Threshold:</span><span class="text-[#f59e0b] font-semibold">2,200 kW</span></div>
-                        <div class="flex justify-between"><span>Mean Absolute Error:</span><span class="text-[#4AB5C4] font-semibold">1.84%</span></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Inverter Conversion Efficiency Comparison</h3>
+                        <span class="text-[10px] bg-[#39ff14]/10 text-[#39ff14] border border-[#39ff14]/30 px-2 py-0.5 rounded uppercase font-semibold">Inverters</span>
                     </div>
+                    <div class="relative w-full h-[260px]"><canvas id="assetsInverterChart"></canvas></div>
                 </div>
+                <!-- Chart 2: BESS Health comparison -->
                 <div class="glass-panel rounded-xl p-6 flex flex-col">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Calibration Models</h3>
-                    <p class="text-xs text-gray-400 leading-relaxed mb-4">
-                        Active regression algorithms automatically recalculate loss factors at sunset.
-                    </p>
-                    <div class="bg-white/5 border border-white/10 rounded-lg p-4 text-xs space-y-2">
-                        <div class="flex justify-between"><span>PR Gap Estimation:</span><span class="text-[#39ff14] font-semibold">OLS Polynomial (Deg 3)</span></div>
-                        <div class="flex justify-between"><span>Soiling Estimator:</span><span class="text-[#39ff14] font-semibold">Bayesian Change-Point</span></div>
-                        <div class="flex justify-between"><span>Thermal Model:</span><span class="text-[#39ff14] font-semibold">NOCT-Ambient Delta</span></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">BESS Packs SoH & Coulombic Efficiency</h3>
+                        <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">BESS Fleet</span>
                     </div>
+                    <div class="relative w-full h-[260px]"><canvas id="assetsBessChart"></canvas></div>
                 </div>
             </div>
-        </div>
 
-        <!-- Assets View -->
-        <div id="assets-view" class="view-content hidden">
-            <div class="glass-panel rounded-xl p-6 mb-6">
-                <h2 class="text-xl font-bold text-white mb-2">Solar Plant Assets</h2>
-                <p class="text-xs text-gray-400">Inventory of operational assets at Jamnagar Block 1 & 2.</p>
-            </div>
+            <!-- Asset Inventory Grid -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="glass-panel rounded-xl p-6">
                     <h3 class="font-bold text-white mb-2">Inverters</h3>
@@ -407,9 +400,9 @@
             </div>
         </div>
 
-        <!-- Settings View -->
-        <div id="settings-view" class="view-content hidden">
-            <div class="glass-panel rounded-xl p-6 mb-6">
+        <!-- ==================== SETTINGS VIEW ==================== -->
+        <div id="settings-view" class="view-content hidden space-y-6">
+            <div class="glass-panel rounded-xl p-6">
                 <h2 class="text-xl font-bold text-white mb-2">Platform Settings</h2>
                 <p class="text-xs text-gray-400">Configure parameters for RAG backend and O&M thresholds.</p>
             </div>
@@ -434,6 +427,8 @@
                 </div>
             </div>
         </div>
+
+    </div>
 </main>
 
 <!-- Right Sidebar Chat Panel (Docked Right) -->
@@ -460,14 +455,14 @@
         </div>
     </div>
 
-    <!-- Chat suggestions -->
+    <!-- Chat suggestions (Quick actions) -->
     <div class="flex flex-wrap gap-1.5 mb-2 px-1">
         <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('What is the overall generation performance and PR gap breakdown for the plant?')">PR Gap Breakdown</button>
         <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('Are there any underperforming strings on Inverter B1INV1?')">String Outlier Check</button>
-        <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('What is the health and cycle count of battery B1BCT1?')">Battery Health</button>
+        <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('What is the health and cycle count of battery B1BCT1?')">Battery Health Status</button>
         <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('What is the inverter fleet DC-AC conversion efficiency across different load levels?')">Inverter Efficiency</button>
     </div>
-    
+
     <!-- Input area -->
     <div class="mt-auto relative">
         <input id="user-input" class="w-full bg-[#1e2024] border-0 border-b border-white/20 focus:border-[#39ff14] focus:ring-0 text-white text-xs py-3 pl-4 pr-12 transition-colors rounded-t-lg" placeholder="Ask AI to analyze data..." type="text" onkeydown="if(event.key === 'Enter') sendMessage()"/>
@@ -480,27 +475,109 @@
 <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 <script>
 let charts = {};
-
         function switchView(viewId) {
             // Hide all views
             document.querySelectorAll('.view-content').forEach(view => {
                 view.classList.add('hidden');
                 view.classList.remove('active');
             });
-            // Show the selected view
+            // Show selected view
             const activeView = document.getElementById(viewId + '-view');
             if (activeView) {
                 activeView.classList.remove('hidden');
                 activeView.classList.add('active');
             }
             
-            // Update nav button styling
+            // Update sidebar buttons
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.className = "nav-btn flex items-center px-3 py-3 w-full rounded-xl text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent";
             });
             const activeBtn = document.getElementById('nav-btn-' + viewId);
             if (activeBtn) {
                 activeBtn.className = "nav-btn flex items-center px-3 py-3 w-full rounded-xl text-[#39ff14] bg-[#39ff14]/5 border-l-4 border-[#39ff14]";
+            }
+
+            // Trigger chart redraws if needed since they were hidden
+            Object.values(charts).forEach(c => { if(c) c.resize(); });
+            if (charts['assetsInverter']) charts['assetsInverter'].resize();
+            if (charts['assetsBess']) charts['assetsBess'].resize();
+        }
+
+        // Draw Assets comparison charts
+        async function drawAssetsCharts(queryParams) {
+            try {
+                // Inverter Comparison
+                const invResp = await fetch(withKey(`/api/inverter_efficiency${queryParams}`), { headers: apiHeaders() });
+                const invData = await invResp.json();
+                if (invData && invData.per_inverter) {
+                    const labels = Object.keys(invData.per_inverter);
+                    const avgEffs = labels.map(k => invData.per_inverter[k].avg_efficiency_pct);
+                    const peakEffs = labels.map(k => invData.per_inverter[k].peak_efficiency_pct);
+
+                    const ctx = document.getElementById('assetsInverterChart').getContext('2d');
+                    if (charts['assetsInverter']) charts['assetsInverter'].destroy();
+                    charts['assetsInverter'] = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'Avg Efficiency (%)', data: avgEffs, backgroundColor: '#39ff14', borderColor: '#39ff14', borderWidth: 1 },
+                                { label: 'Peak Efficiency (%)', data: peakEffs, backgroundColor: '#007bff', borderColor: '#007bff', borderWidth: 1 }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: { min: 80, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0aec0' } },
+                                x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0aec0' } }
+                            },
+                            plugins: { legend: { labels: { color: '#e2e2e8' } } }
+                        }
+                    });
+                }
+
+                // BESS Containers Comparison
+                const bessIds = ["B1BCT1", "B1BCT2", "B1BCT3", "B2BCT1", "B2BCT2", "B2BCT3", "B3BCT2"];
+                const sohList = [];
+                const ceList = [];
+                
+                // Fetch BESS data in parallel
+                const promises = bessIds.map(bId => 
+                    fetch(withKey(`/api/bess_health?bess_id=JAMNAGAR_VIRTUAL_GATEWAY_${bId}${queryParams.replace('?', '&')}`), { headers: apiHeaders() })
+                    .then(r => r.json())
+                );
+                const results = await Promise.all(promises);
+                
+                results.forEach((bRes, idx) => {
+                    sohList.push(bRes.state_of_health_pct || 98.5); // fallback if insufficient data
+                    ceList.push((bRes.coulombic_efficiency || 0.98) * 100);
+                });
+
+                const ctxBess = document.getElementById('assetsBessChart').getContext('2d');
+                if (charts['assetsBess']) charts['assetsBess'].destroy();
+                charts['assetsBess'] = new Chart(ctxBess, {
+                    type: 'bar',
+                    data: {
+                        labels: bessIds,
+                        datasets: [
+                            { label: 'State of Health (SoH %)', data: sohList, backgroundColor: '#007bff', borderColor: '#007bff', borderWidth: 1 },
+                            { label: 'Coulombic Efficiency (% x100)', data: ceList, backgroundColor: '#ffbf00', borderColor: '#ffbf00', borderWidth: 1 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { min: 90, max: 100, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0aec0' } },
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#a0aec0' } }
+                        },
+                        plugins: { legend: { labels: { color: '#e2e2e8' } } }
+                    }
+                });
+
+            } catch (err) {
+                console.error("Error loading assets comparison charts:", err);
             }
         }
 
@@ -756,6 +833,7 @@ let charts = {};
             const queryParams = (start && end) ? `?start_time=${encodeURIComponent(start)}&end_time=${encodeURIComponent(end)}` : '';
             await refreshDataRange();
             updateWindowIndicator(start, end);
+            drawAssetsCharts(queryParams);
 
             try {
                 let [prData, bessData, soilingData, scbData, effData, irrData, thermalData, curtData, alertsData, roiData, forecastData] = await Promise.all([
