@@ -13,7 +13,7 @@ sys.path.append(os.path.dirname(__file__))
 import ml_pipelines
 import agent_setup
 
-MODEL_NAME = "google/gemma-3-12b-it"
+MODEL_NAME = "meta/llama-3.1-70b-instruct"
 
 def _call_nvidia(model_name, api_key, messages, temperature=0.2, max_tokens=32768, stream=False):
     headers = {
