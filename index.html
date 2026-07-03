@@ -1895,6 +1895,27 @@
                 thoughts.push("Querying active Jamnagar Solar assets list...");
                 responseText = `### Jamnagar Solar Facility — Active Assets Grouped by Type\n\n*   **Batteries (7 BESS Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT2\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1BCT3\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2BCT1\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2BCT2\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2BCT3\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B3BCT2\`\n*   **Inverters (2 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1INV1\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B3INV1\`\n*   **Power Meters (MFM — 19 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1MFM1\` (Grid-tie), \`B1MFM2\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2MFM1\` through \`B2MFM16\`\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B3MFM1\`, \`B3MFM2\`, \`B3MFM3\`\n*   **PCS (Power Conversion System — 3 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B1PCS1\`, \`B2PCS1\`, \`B3PCS1\`\n*   **DC Converters (3 Units)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_B2DCCON1\`, \`B2DCCON2\`, \`B2DCCON3\`\n*   **Weather Stations (1 WMS Unit)**:\n    *   \`JAMNAGAR_VIRTUAL_GATEWAY_PPCWMS1\``;
 
+            } else if (lower.includes("rte") || lower.includes("round trip efficiency")) {
+                thoughts.push("Fetching BESS Round-Trip Efficiency metrics...");
+                responseText = "BESS Round-Trip Efficiency (RTE) is currently 87.3%. Status is Normal.";
+                chart = { type: "doughnut", data: { labels: ["RTE", "Losses"], datasets: [{ data: [87.3, 12.7], backgroundColor: ["#22c55e","#ef4444"] }] } };
+            } else if (lower.includes("uptime") || lower.includes("ens") || lower.includes("energy not supplied")) {
+                thoughts.push("Calculating System Uptime and Energy Not Supplied...");
+                responseText = "System Uptime is 99.2%. Estimated Energy Not Supplied (ENS) is 0.8 MWh.";
+                chart = { type: "doughnut", data: { labels: ["Uptime", "Downtime"], datasets: [{ data: [99.2, 0.8], backgroundColor: ["#22c55e","#f59e0b"] }] } };
+            } else if (lower.includes("tracker") || lower.includes("misalignment")) {
+                thoughts.push("Analyzing tracker alignment data...");
+                responseText = "Detected tracker misalignment resulting in 125 kWh loss. Affected trackers: B1PCS1_TRK1, B2PCS1_TRK4.";
+                chart = { type: "bar", data: { labels: ["B1PCS1_TRK1", "B2PCS1_TRK4"], datasets: [{ label: "Loss (kWh)", data: [80, 45], backgroundColor: "#f59e0b" }] } };
+            } else if (lower.includes("soiling roi") || lower.includes("cleaning roi") || lower.includes("when to clean") || lower.includes("wash")) {
+                thoughts.push("Running Soiling ROI Planner...");
+                responseText = "It has been 12 days since the last cleaning. Cumulative dust loss is Rs 45,000. Tipping point is 15 days. Current cleaning ROI is 180%.";
+                chart = { type: "bar", data: { labels: ["Cleaning Cost", "Cumulative Dust Loss"], datasets: [{ label: "Cost / Loss (Rs)", data: [25000, 45000], backgroundColor: ["rgba(9,137,177,0.75)", "rgba(239,68,68,0.75)"] }] } };
+            } else if (lower.includes("forecast") || lower.includes("dispatch schedule") || lower.includes("bess schedule") || lower.includes("day-ahead")) {
+                thoughts.push("Simulating day-ahead generation and BESS dispatch...");
+                responseText = "24-hour Day-Ahead Generation and BESS Dispatch Schedule generated successfully.";
+                chart = { type: "line", data: { labels: ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"], datasets: [ {label:"Generation", data:[0,0,500,2000,500,0], yAxisID:"y"}, {label:"BESS Dispatch", data:[-500,-500,0,500,500,-500], yAxisID:"y"}, {label:"SOC %", data:[80,50,50,90,70,50], yAxisID:"y1"} ] } };
+
             // 12. Custom / General SQL simulation
             } else if (lower.includes("sql") || lower.includes("select")) {
                 thoughts.push("Executing custom SQL query simulation...");

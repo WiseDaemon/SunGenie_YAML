@@ -347,6 +347,120 @@ def _chart_curtailment(curt_res):
         },
         "options": {"cutout": "60%", "plugins": {"legend": {"position": "right"}}}
     }
+def _chart_bess_rte(rte_res):
+    rte = rte_res.get("rte_pct", 0)
+    return {
+        "type": "doughnut",
+        "title": "BESS Round-Trip Efficiency",
+        "description": "RTE percentage for the selected BESS unit.",
+        "data": {
+            "labels": ["RTE", "Losses"],
+            "datasets": [{
+                "data": [round(rte, 1), round(100.0 - rte, 1)],
+                "backgroundColor": ["rgba(34,197,94,0.8)", "rgba(239,68,68,0.8)"],
+                "borderWidth": 1, "borderColor": "rgba(11,15,25,0.5)"
+            }]
+        },
+        "options": {"cutout": "70%"}
+    }
+
+def _chart_uptime_ens(uptime_res):
+    uptime = uptime_res.get("uptime_pct", 0)
+    return {
+        "type": "doughnut",
+        "title": "System Uptime & Energy Not Supplied",
+        "description": "Plant uptime percentage and estimated ENS.",
+        "data": {
+            "labels": ["Uptime", "Downtime"],
+            "datasets": [{
+                "data": [round(uptime, 1), round(100.0 - uptime, 1)],
+                "backgroundColor": ["rgba(34,197,94,0.8)", "rgba(245,158,11,0.8)"],
+                "borderWidth": 1, "borderColor": "rgba(11,15,25,0.5)"
+            }]
+        },
+        "options": {"cutout": "70%"}
+    }
+
+def _chart_tracker_misalignment(tracker_res):
+    trackers = tracker_res.get("affected_trackers", [])
+    # If no trackers are explicitly listed but there's a loss, just show generic
+    if not trackers and tracker_res.get("misalignment_loss_kwh", 0) > 0:
+        trackers = ["Fleet Avg Loss"]
+        loss_values = [tracker_res.get("misalignment_loss_kwh", 0)]
+    else:
+        loss_values = [tracker_res.get("misalignment_loss_kwh", 0) / max(1, len(trackers))] * len(trackers)
+    return {
+        "type": "bar",
+        "title": "Tracker Misalignment Loss (kWh)",
+        "description": "Estimated energy loss from tracker misalignment.",
+        "data": {
+            "labels": trackers,
+            "datasets": [{
+                "label": "Loss (kWh)",
+                "data": loss_values,
+                "backgroundColor": "rgba(245,158,11,0.8)",
+                "borderRadius": 4
+            }]
+        },
+        "options": {"scales": {"y": {"beginAtZero": True}}}
+    }
+
+def _chart_soiling_roi(roi_res):
+    return {
+        "type": "bar",
+        "title": f"Module Cleaning ROI Analysis — Return {roi_res.get('roi_pct', 0)}%",
+        "description": "Compares cumulative financial loss to module cleaning cost.",
+        "data": {
+            "labels": ["Cleaning Cost", "Cumulative Dust Loss"],
+            "datasets": [{
+                "label": "Cost / Loss (Rs)",
+                "data": [roi_res.get("cleaning_cost", 0), roi_res.get("cumulative_loss_inr", 0)],
+                "backgroundColor": ["rgba(9,137,177,0.75)", "rgba(239,68,68,0.75)"],
+                "borderRadius": 4
+            }]
+        },
+        "options": {"scales": {"y": {"beginAtZero": True}}}
+    }
+
+def _chart_forecast(fore_res):
+    return {
+        "type": "line",
+        "title": "24-Hour Day-Ahead Generation & BESS Schedule",
+        "description": "Forecasts active power generation, BESS dispatch, and State of Charge (SOC).",
+        "data": {
+            "labels": [f"{item['hour']:02d}:00" for item in fore_res],
+            "datasets": [
+                {
+                    "label": "Gen Forecast (KW)",
+                    "data": [item["predicted_generation_kw"] for item in fore_res],
+                    "borderColor": "rgba(138,184,51,1)",
+                    "backgroundColor": "rgba(138,184,51,0.1)",
+                    "fill": True, "yAxisID": "y", "tension": 0.4
+                },
+                {
+                    "label": "BESS Dispatch (KW)",
+                    "data": [item["bess_charge_discharge_kw"] for item in fore_res],
+                    "borderColor": "rgba(9,137,177,1)",
+                    "backgroundColor": "rgba(9,137,177,0.2)",
+                    "fill": True, "yAxisID": "y", "tension": 0.4, "stepped": True
+                },
+                {
+                    "label": "SOC %",
+                    "data": [item["bess_soc_pct"] for item in fore_res],
+                    "borderColor": "rgba(239,68,68,1)",
+                    "borderDash": [5, 5],
+                    "yAxisID": "y1", "tension": 0.4
+                }
+            ]
+        },
+        "options": {
+            "scales": {
+                "y": {"type": "linear", "display": True, "position": "left", "title": {"display": True, "text": "Power (KW)"}},
+                "y1": {"type": "linear", "display": True, "position": "right", "title": {"display": True, "text": "SOC %"}, "min": 0, "max": 100, "grid": {"drawOnChartArea": False}}
+            },
+            "interaction": {"mode": "index", "intersect": False}
+        }
+    }
 
 
 def _chart_comparison(label_val_pairs, title, dataset_label):
@@ -913,26 +1027,26 @@ Generate ONLY a valid SQLite SELECT query to answer this question. Do not explai
         elif any(k in prompt_lower for k in ["bess", "battery", "state of health", "coulombic", "cycle count"]):
             thoughts.append("Running BESS State-of-Health & Coulombic Efficiency analysis...")
             bess_res   = ml_pipelines.get_bess_health("JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", start_time=start_time, end_time=end_time)
-            context_data = f"[Diagnostics: BESS={bess_res}]"
+            context_data = f"[Diagnostics: BESS_ID={bess_res.get('bess_id')}, SoH={bess_res.get('state_of_health_pct')}%, Cycles={bess_res.get('total_cycles')}, CE={bess_res.get('coulombic_efficiency')}, Status={bess_res.get('status')}]"
             chart_spec   = _chart_bess(bess_res)
             
         elif any(k in prompt_lower for k in ["rte", "round trip efficiency"]):
             thoughts.append("Running BESS Round Trip Efficiency (RTE) calculation...")
             rte_res = ml_pipelines.get_bess_rte("JAMNAGAR_VIRTUAL_GATEWAY_B1BCT1", start_time=start_time, end_time=end_time)
-            context_data = f"[Diagnostics: BESS_RTE={rte_res}]"
-            chart_spec = None
+            context_data = f"[Diagnostics: BESS_ID={rte_res.get('bess_id')}, RTE={rte_res.get('rte_pct')}%, Status={rte_res.get('status')}]"
+            chart_spec = _chart_bess_rte(rte_res)
             
         elif any(k in prompt_lower for k in ["uptime", "ens", "energy not supplied"]):
             thoughts.append("Running System Uptime and ENS calculation...")
             uptime_res = ml_pipelines.get_system_uptime_ens(start_time=start_time, end_time=end_time)
-            context_data = f"[Diagnostics: SYSTEM_UPTIME={uptime_res}]"
-            chart_spec = None
+            context_data = f"[Diagnostics: Uptime={uptime_res.get('uptime_pct')}%, ENS={uptime_res.get('ens_mwh')} MWh, Status={uptime_res.get('status')}]"
+            chart_spec = _chart_uptime_ens(uptime_res)
             
         elif any(k in prompt_lower for k in ["tracker", "misalignment"]):
             thoughts.append("Running Tracker Misalignment Deviation detection...")
             tracker_res = ml_pipelines.get_tracker_misalignment(start_time=start_time, end_time=end_time)
-            context_data = f"[Diagnostics: TRACKER_MISALIGNMENT={tracker_res}]"
-            chart_spec = None
+            context_data = f"[Diagnostics: Loss_kWh={tracker_res.get('misalignment_loss_kwh')}, Affected_Trackers={tracker_res.get('affected_trackers')}, Status={tracker_res.get('status')}]"
+            chart_spec = _chart_tracker_misalignment(tracker_res)
 
         # 4. Inverter efficiency curve  ── ISING SPECIALIST ──
         elif any(k in prompt_lower for k in ["efficiency", "dc-ac", "dc ac", "load factor",
@@ -942,18 +1056,19 @@ Generate ONLY a valid SQLite SELECT query to answer this question. Do not explai
             ticket_payload = ""
             if eff_res.get("underperforming_inverters"):
                 ticket_desc = (
-                    f"Inverters {eff_res['underperforming_inverters']} below 92% DC-AC threshold. "
-                    f"Fleet avg: {eff_res['fleet_avg_efficiency_pct']}%. Inspect power electronics."
+                    f"Inverter efficiency degradation detected. "
+                    f"Underperforming: {', '.join(eff_res['underperforming_inverters'])}. "
+                    f"Fleet average: {eff_res['fleet_avg_efficiency_pct']}%. "
+                    "Check filter clogging and cooling fans."
                 )
                 ticket_payload = agent_setup.generate_actionable_task_payload(
-                    "Inverter Efficiency Degradation — Inspection Required",
-                    "Warning", "JAMNAGAR_INVERTER_FLEET", ticket_desc
+                    "Inverter Efficiency Degradation",
+                    "Warning", "JAMNAGAR_SOLAR_FIELD", ticket_desc
                 )
             context_data = (
                 f"[Diagnostics: Fleet avg efficiency={eff_res['fleet_avg_efficiency_pct']}%, "
                 f"Underperforming={eff_res['underperforming_inverters']}, "
-                f"Per-inverter={eff_res['per_inverter']}, Curve={eff_res['fleet_curve']}, "
-                f"Ticket={ticket_payload}]"
+                f"Per-inverter={eff_res['per_inverter']}, Curve={eff_res['fleet_curve'][:10]}, Ticket={ticket_payload}]"
             )
             chart_spec = _chart_efficiency(eff_res)
             use_ising  = True
@@ -1027,62 +1142,28 @@ Generate ONLY a valid SQLite SELECT query to answer this question. Do not explai
         elif any(k in prompt_lower for k in ["soiling roi", "cleaning roi", "tipping point", "when to clean", "module washing", "wash"]):
             thoughts.append("Running Soiling Cleaning ROI analysis...")
             roi_res = ml_pipelines.calibrate_cleaning_roi(start_time=start_time, end_time=end_time)
-            context_data = f"[Diagnostics: Soiling_ROI={roi_res}]"
-            chart_spec = {
-                "type": "bar",
-                "title": f"Module Cleaning ROI Analysis — Return {roi_res['roi_pct']}%",
-                "description": "Compares cumulative financial loss to module cleaning cost.",
-                "data": {
-                    "labels": ["Cleaning Cost", "Cumulative Dust Loss"],
-                    "datasets": [{
-                        "label": "Cost / Loss (Rs)",
-                        "data": [roi_res["cleaning_cost"], roi_res["cumulative_loss_inr"]],
-                        "backgroundColor": ["rgba(9,137,177,0.75)", "rgba(239,68,68,0.75)"],
-                        "borderRadius": 4
-                    }]
-                }
-            }
+            context_data = f"[Diagnostics: Days_Since_Clean={roi_res.get('days_since')}, Cumulative_Loss_Rs={roi_res.get('cumulative_loss_inr')}, Tipping_Point_Days={roi_res.get('tipping_point_days')}, ROI={roi_res.get('roi_pct')}%]"
+            chart_spec = _chart_soiling_roi(roi_res)
 
         # 9. Day-Ahead Generation & BESS Forecasting
         elif any(k in prompt_lower for k in ["forecast", "dispatch schedule", "bess schedule", "battery schedule", "day-ahead"]):
             thoughts.append("Simulating 24-hour generation & BESS scheduling...")
             fore_res = ml_pipelines.get_generation_and_bess_forecast(start_time=start_time, end_time=end_time)
             context_data = f"[Diagnostics: Forecast_Schedule={fore_res[:12]}]"
-            chart_spec = {
-                "type": "line",
-                "title": "24-Hour BESS Charge/Discharge & SOC Forecast",
-                "description": "Plots forecasted generation, recommended BESS charging, discharging, and SOC.",
-                "data": {
-                    "labels": [item["hour"] for item in fore_res],
-                    "datasets": [
-                        {
-                            "label": "Gen Forecast (kW)",
-                            "data": [item["predicted_generation_kw"] for item in fore_res],
-                            "borderColor": "#8ab833",
-                            "fill": False
-                        },
-                        {
-                            "label": "BESS Dispatch (kW)",
-                            "data": [item["bess_charge_discharge_kw"] for item in fore_res],
-                            "borderColor": "#0989b1",
-                            "fill": False
-                        },
-                        {
-                            "label": "BESS SOC (%)",
-                            "data": [item["bess_soc_pct"] for item in fore_res],
-                            "borderColor": "#f59e0b",
-                            "fill": False,
-                            "yAxisID": "y1"
-                        }
-                    ]
-                },
-                "options": {
-                    "scales": {
-                        "y": {"title": {"display": True, "text": "Power (kW)"}},
-                        "y1": {"position": "right", "title": {"display": True, "text": "SOC (%)"}, "min": 0, "max": 100, "grid": {"drawOnChartArea": False}}
-                    }
-                }
-            }
+            chart_spec = _chart_forecast(fore_res)
+        # 10. Alerts Retrieval
+        elif any(k in prompt_lower for k in ["alert", "alerts", "warning", "warnings", "active alerts"]):
+            thoughts.append("Retrieving active system alerts...")
+            alerts_res = ml_pipelines.get_all_alerts()
+            context_data = f"[Diagnostics: Active_Alerts={alerts_res}]"
+            chart_spec = None
+
+        # 11. Report Generation
+        elif any(k in prompt_lower for k in ["generate report", "export report", "download report", "csv report", "html report"]):
+            thoughts.append("Generating analytical report...")
+            report_path = ml_pipelines.generate_report()
+            context_data = f"[Diagnostics: Report_Generated=Successfully saved to {report_path}]"
+            chart_spec = None
 
         # ── ARC-03: LLM intent-classification fallback ─────────────────────────
         # If no keyword/asset path produced diagnostics, ask a fast model to
@@ -1105,21 +1186,25 @@ Generate ONLY a valid SQLite SELECT query to answer this question. Do not explai
                 thoughts.append(f"Intent classifier routed query to: {intent}")
 
                 dispatch = {
-                    "PR_GAP": lambda: ml_pipelines.get_expected_vs_actual_generation(start_time=start_time, end_time=end_time),
-                    "SCB_OUTLIERS": lambda: ml_pipelines.detect_scb_outliers(start_time=start_time, end_time=end_time),
-                    "BESS_HEALTH": lambda: ml_pipelines.get_bess_health(start_time=start_time, end_time=end_time),
-                    "INVERTER_EFFICIENCY": lambda: ml_pipelines.analyze_inverter_efficiency(start_time=start_time, end_time=end_time),
-                    "IRRADIANCE_CORRELATION": lambda: ml_pipelines.analyze_irradiance_power_correlation(start_time=start_time, end_time=end_time),
-                    "THERMAL_ANOMALY": lambda: ml_pipelines.detect_thermal_anomalies(start_time=start_time, end_time=end_time),
-                    "CURTAILMENT": lambda: ml_pipelines.analyze_grid_curtailment(start_time=start_time, end_time=end_time),
-                    "SOILING_ROI": lambda: ml_pipelines.calibrate_cleaning_roi(start_time=start_time, end_time=end_time),
-                    "FORECAST": lambda: ml_pipelines.get_generation_and_bess_forecast(start_time=start_time, end_time=end_time),
+                    "PR_GAP": (lambda: ml_pipelines.get_expected_vs_actual_generation(start_time=start_time, end_time=end_time), _chart_pr_gap),
+                    "SCB_OUTLIERS": (lambda: ml_pipelines.detect_scb_outliers(start_time=start_time, end_time=end_time), _chart_scb),
+                    "BESS_HEALTH": (lambda: ml_pipelines.get_bess_health(start_time=start_time, end_time=end_time), _chart_bess),
+                    "INVERTER_EFFICIENCY": (lambda: ml_pipelines.analyze_inverter_efficiency(start_time=start_time, end_time=end_time), _chart_efficiency),
+                    "IRRADIANCE_CORRELATION": (lambda: ml_pipelines.analyze_irradiance_power_correlation(start_time=start_time, end_time=end_time), _chart_irradiance),
+                    "THERMAL_ANOMALY": (lambda: ml_pipelines.detect_thermal_anomalies(start_time=start_time, end_time=end_time), _chart_thermal),
+                    "CURTAILMENT": (lambda: ml_pipelines.analyze_grid_curtailment(start_time=start_time, end_time=end_time), _chart_curtailment),
+                    "SOILING_ROI": (lambda: ml_pipelines.calibrate_cleaning_roi(start_time=start_time, end_time=end_time), _chart_soiling_roi),
+                    "FORECAST": (lambda: ml_pipelines.get_generation_and_bess_forecast(start_time=start_time, end_time=end_time), _chart_forecast),
                 }
                 if intent in dispatch:
-                    result = await loop.run_in_executor(None, dispatch[intent])
+                    pipeline_fn, chart_fn = dispatch[intent]
+                    result = await loop.run_in_executor(None, pipeline_fn)
                     if isinstance(result, list):
-                        result = result[:12]   # keep forecast/series payloads compact
-                    context_data = f"[Diagnostics: {intent}={result}]"
+                        result_for_context = result[:12]   # keep forecast/series payloads compact
+                    else:
+                        result_for_context = result
+                    context_data = f"[Diagnostics: {intent}={result_for_context}]"
+                    chart_spec = chart_fn(result)
                 elif intent and intent != "GENERAL":
                     # Text-to-SQL: for DATA questions only (greetings/small talk are
                     # classified GENERAL and skip this). Have the LLM write a single
