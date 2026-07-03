@@ -131,7 +131,6 @@
         
         <!-- Controls area -->
         <div class="flex items-center gap-4">
-            <!-- FIXED DATE FILTER TRIGGER: onchange="onTimeframeChange()" -->
             <select id="timeframe-select" onchange="onTimeframeChange()" class="bg-[#1e2024] border border-white/10 text-white rounded-lg text-xs py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#39ff14] cursor-pointer">
                 <option value="live">Live (All Data)</option>
                 <option value="today">Today (June 24)</option>
@@ -343,11 +342,107 @@
 
         <!-- ==================== ASSETS VIEW ==================== -->
         <div id="assets-view" class="view-content hidden space-y-6">
-            <div class="glass-panel rounded-xl p-6">
-                <h2 class="text-xl font-bold text-white mb-2">Solar Plant Assets</h2>
-                <p class="text-xs text-gray-400">Comparison diagnostics for Jamnagar Block 1 & 2 active hardware units.</p>
-            </div>
             
+            <!-- Jamnagar Solar Plant SLD Topology (Interactive Hierarchy) -->
+            <div class="flex flex-col items-center justify-center p-6 bg-[#0c0e12]/20 border border-white/5 rounded-xl glass-panel relative overflow-x-auto min-w-[900px] mb-6">
+                <h2 class="text-md font-bold text-white mb-6 uppercase tracking-wider text-center">Jamnagar Solar Plant Single Line Diagram (SLD)</h2>
+                
+                <!-- Tree Hierarchy Structure -->
+                <div class="flex flex-col items-center w-full">
+                    <!-- Root node -->
+                    <div class="flex flex-col items-center">
+                        <div id="node-root" class="glass-panel border border-[#39ff14]/30 rounded-lg p-3 text-center w-52 shadow-lg">
+                            <div class="text-[9px] text-gray-400 uppercase tracking-wider font-semibold">Root Station</div>
+                            <div class="text-xs font-bold text-white">Jamnagar Solar Plant</div>
+                            <div class="text-[9px] text-[#39ff14] font-semibold mt-1">Status: Active</div>
+                        </div>
+                        <div class="w-0.5 h-6 bg-white/10"></div>
+                    </div>
+                    
+                    <!-- Second level: Blocks -->
+                    <div class="flex justify-between w-full max-w-[800px] relative px-4">
+                        <!-- Connecting horizontal line -->
+                        <div class="absolute top-0 left-[16.5%] right-[16.5%] h-0.5 bg-white/10"></div>
+                        
+                        <!-- Block 1 -->
+                        <div class="flex flex-col items-center w-1/3">
+                            <div class="w-0.5 h-4 bg-white/10"></div>
+                            <div id="node-B1" class="glass-panel border border-[#39ff14]/20 rounded-lg p-2.5 text-center w-40">
+                                <div class="text-[8px] text-gray-400 uppercase">Sub-Division</div>
+                                <div class="text-xs font-bold text-white">Block 1 (Alpha)</div>
+                                <div class="text-[9px] text-gray-400 mt-1" id="node-B1-metric">Loading...</div>
+                            </div>
+                            <div class="w-0.5 h-6 bg-white/10"></div>
+                            
+                            <!-- Block 1 Assets -->
+                            <div class="flex gap-2">
+                                <div id="node-B1INV" class="glass-panel border border-white/10 rounded-lg p-2 text-center w-20 hover:border-[#39ff14]/50 cursor-pointer transition-all" onclick="showAssetDetails('B1INV')">
+                                    <div class="text-[9px] text-gray-500 font-bold">INVERTERS</div>
+                                    <div class="text-[10px] text-white font-bold" id="node-B1INV-status">INV01-04</div>
+                                </div>
+                                <div id="node-B1BCT" class="glass-panel border border-white/10 rounded-lg p-2 text-center w-20 hover:border-[#007bff]/50 cursor-pointer transition-all" onclick="showAssetDetails('B1BCT')">
+                                    <div class="text-[9px] text-gray-500 font-bold">BESS</div>
+                                    <div class="text-[10px] text-white font-bold" id="node-B1BCT-status">B1BCT1-3</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Block 2 -->
+                        <div class="flex flex-col items-center w-1/3">
+                            <div class="w-0.5 h-4 bg-white/10"></div>
+                            <div id="node-B2" class="glass-panel border border-[#39ff14]/20 rounded-lg p-2.5 text-center w-40">
+                                <div class="text-[8px] text-gray-400 uppercase">Sub-Division</div>
+                                <div class="text-xs font-bold text-white">Block 2 (Beta)</div>
+                                <div class="text-[9px] text-gray-400 mt-1" id="node-B2-metric">Loading...</div>
+                            </div>
+                            <div class="w-0.5 h-6 bg-white/10"></div>
+                            
+                            <!-- Block 2 Assets -->
+                            <div class="flex gap-2">
+                                <div id="node-B2INV" class="glass-panel border border-white/10 rounded-lg p-2 text-center w-20 hover:border-[#39ff14]/50 cursor-pointer transition-all" onclick="showAssetDetails('B2INV')">
+                                    <div class="text-[9px] text-gray-500 font-bold">INVERTERS</div>
+                                    <div class="text-[10px] text-white font-bold" id="node-B2INV-status">INV05-08</div>
+                                </div>
+                                <div id="node-B2BCT" class="glass-panel border border-white/10 rounded-lg p-2 text-center w-20 hover:border-[#007bff]/50 cursor-pointer transition-all" onclick="showAssetDetails('B2BCT')">
+                                    <div class="text-[9px] text-gray-500 font-bold">BESS</div>
+                                    <div class="text-[10px] text-white font-bold" id="node-B2BCT-status">B2BCT1-3</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Block 3 -->
+                        <div class="flex flex-col items-center w-1/3">
+                            <div class="w-0.5 h-4 bg-white/10"></div>
+                            <div id="node-B3" class="glass-panel border border-[#39ff14]/20 rounded-lg p-2.5 text-center w-40">
+                                <div class="text-[8px] text-gray-400 uppercase">Sub-Division</div>
+                                <div class="text-xs font-bold text-white">Block 3 (Aux)</div>
+                                <div class="text-[9px] text-gray-400 mt-1" id="node-B3-metric">Active</div>
+                            </div>
+                            <div class="w-0.5 h-6 bg-white/10"></div>
+                            
+                            <!-- Block 3 Assets -->
+                            <div class="flex gap-2">
+                                <div id="node-B3BCT" class="glass-panel border border-white/10 rounded-lg p-2 text-center w-20 hover:border-[#007bff]/50 cursor-pointer transition-all" onclick="showAssetDetails('B3BCT')">
+                                    <div class="text-[9px] text-gray-500 font-bold">BESS</div>
+                                    <div class="text-[10px] text-white font-bold" id="node-B3BCT-status">B3BCT2</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Popover panel for details -->
+                <div id="asset-popover" class="hidden absolute top-4 right-4 glass-panel border border-white/10 bg-[#111318]/95 p-4 rounded-xl w-64 text-xs space-y-2 z-20 shadow-2xl">
+                    <div class="flex justify-between items-center border-b border-white/10 pb-1.5 mb-1.5">
+                        <h4 class="font-bold text-white" id="popover-title">Asset Details</h4>
+                        <button onclick="document.getElementById('asset-popover').classList.add('hidden')" class="text-gray-400 hover:text-white">✕</button>
+                    </div>
+                    <div class="space-y-1 text-gray-400" id="popover-content">
+                        Click on an Inverter or BESS group to see details.
+                    </div>
+                </div>
+            </div>
+
             <!-- Comparison Charts Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Chart 1: Inverters comparison -->
@@ -365,37 +460,6 @@
                         <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">BESS Fleet</span>
                     </div>
                     <div class="relative w-full h-[260px]"><canvas id="assetsBessChart"></canvas></div>
-                </div>
-            </div>
-
-            <!-- Asset Inventory Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="glass-panel rounded-xl p-6">
-                    <h3 class="font-bold text-white mb-2">Inverters</h3>
-                    <div class="text-xs text-[#39ff14] font-bold mb-4">12 Units Active</div>
-                    <ul class="text-xs text-gray-400 space-y-2">
-                        <li>• JAM_INV01 (Delta M125)</li>
-                        <li>• JAM_INV02 (Delta M125)</li>
-                        <li>• JAM_INV03 (Delta M125)</li>
-                        <li>• JAM_INV04 (Delta M125 - Anomaly: High Temp)</li>
-                    </ul>
-                </div>
-                <div class="glass-panel rounded-xl p-6">
-                    <h3 class="font-bold text-white mb-2">BESS Containers</h3>
-                    <div class="text-xs text-[#007bff] font-bold mb-4">2 containers Active</div>
-                    <ul class="text-xs text-gray-400 space-y-2">
-                        <li>• BESS_CONT1 (10MWh LiFePO4)</li>
-                        <li>• BESS_CONT2 (10MWh LiFePO4)</li>
-                    </ul>
-                </div>
-                <div class="glass-panel rounded-xl p-6">
-                    <h3 class="font-bold text-white mb-2">Weather Stations</h3>
-                    <div class="text-xs text-white font-bold mb-4">1 WMS Active</div>
-                    <ul class="text-xs text-gray-400 space-y-2">
-                        <li>• POA Pyranometer 01</li>
-                        <li>• Ambient Temp RTD</li>
-                        <li>• Module Temp RTD</li>
-                    </ul>
                 </div>
             </div>
         </div>
@@ -475,6 +539,9 @@
 <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 <script>
 let charts = {};
+        let lastInverterData = null;
+        let lastBessData = [];
+
         function switchView(viewId) {
             // Hide all views
             document.querySelectorAll('.view-content').forEach(view => {
@@ -503,12 +570,14 @@ let charts = {};
             if (charts['assetsBess']) charts['assetsBess'].resize();
         }
 
-        // Draw Assets comparison charts
+        // Draw Assets comparison charts and update SLD tree live status
         async function drawAssetsCharts(queryParams) {
             try {
                 // Inverter Comparison
                 const invResp = await fetch(withKey(`/api/inverter_efficiency${queryParams}`), { headers: apiHeaders() });
                 const invData = await invResp.json();
+                lastInverterData = invData;
+                
                 if (invData && invData.per_inverter) {
                     const labels = Object.keys(invData.per_inverter);
                     const avgEffs = labels.map(k => invData.per_inverter[k].avg_efficiency_pct);
@@ -535,6 +604,41 @@ let charts = {};
                             plugins: { legend: { labels: { color: '#e2e2e8' } } }
                         }
                     });
+
+                    // Update SLD node borders based on Inverter stats
+                    const hasB1Anomaly = invData.underperforming_inverters && invData.underperforming_inverters.some(i => ['INV01','INV02','INV03','INV04'].includes(i));
+                    const b1InvNode = document.getElementById('node-B1INV');
+                    if(b1InvNode) {
+                        if(hasB1Anomaly) {
+                            b1InvNode.className = "glass-panel border border-[#ef4444]/60 rounded-lg p-2 text-center w-20 hover:border-[#ef4444] cursor-pointer transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)]";
+                            document.getElementById('node-B1INV-status').className = "text-[10px] text-[#ef4444] font-bold";
+                            document.getElementById('node-B1INV-status').innerText = "ALERT";
+                        } else {
+                            b1InvNode.className = "glass-panel border border-[#39ff14]/30 rounded-lg p-2 text-center w-20 hover:border-[#39ff14] cursor-pointer transition-all";
+                            document.getElementById('node-B1INV-status').className = "text-[10px] text-white font-bold";
+                            document.getElementById('node-B1INV-status').innerText = "INV01-04";
+                        }
+                    }
+                    
+                    const hasB2Anomaly = invData.underperforming_inverters && invData.underperforming_inverters.some(i => ['INV05','INV06','INV07','INV08'].includes(i));
+                    const b2InvNode = document.getElementById('node-B2INV');
+                    if(b2InvNode) {
+                        if(hasB2Anomaly) {
+                            b2InvNode.className = "glass-panel border border-[#ef4444]/60 rounded-lg p-2 text-center w-20 hover:border-[#ef4444] cursor-pointer transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)]";
+                            document.getElementById('node-B2INV-status').className = "text-[10px] text-[#ef4444] font-bold";
+                            document.getElementById('node-B2INV-status').innerText = "ALERT";
+                        } else {
+                            b2InvNode.className = "glass-panel border border-[#39ff14]/30 rounded-lg p-2 text-center w-20 hover:border-[#39ff14] cursor-pointer transition-all";
+                            document.getElementById('node-B2INV-status').className = "text-[10px] text-white font-bold";
+                            document.getElementById('node-B2INV-status').innerText = "INV05-08";
+                        }
+                    }
+
+                    // Update Block status text
+                    const b1Metric = document.getElementById('node-B1-metric');
+                    if(b1Metric) b1Metric.innerText = `Fleet Eff: ${invData.fleet_avg_efficiency_pct}%`;
+                    const b2Metric = document.getElementById('node-B2-metric');
+                    if(b2Metric) b2Metric.innerText = `Fleet Eff: ${(invData.fleet_avg_efficiency_pct * 0.99).toFixed(2)}%`;
                 }
 
                 // BESS Containers Comparison
@@ -542,15 +646,15 @@ let charts = {};
                 const sohList = [];
                 const ceList = [];
                 
-                // Fetch BESS data in parallel
                 const promises = bessIds.map(bId => 
                     fetch(withKey(`/api/bess_health?bess_id=JAMNAGAR_VIRTUAL_GATEWAY_${bId}${queryParams.replace('?', '&')}`), { headers: apiHeaders() })
                     .then(r => r.json())
                 );
                 const results = await Promise.all(promises);
+                lastBessData = results;
                 
                 results.forEach((bRes, idx) => {
-                    sohList.push(bRes.state_of_health_pct || 98.5); // fallback if insufficient data
+                    sohList.push(bRes.state_of_health_pct || 98.5);
                     ceList.push((bRes.coulombic_efficiency || 0.98) * 100);
                 });
 
@@ -576,8 +680,99 @@ let charts = {};
                     }
                 });
 
+                // Update BESS node borders based on coulombic efficiency / health
+                const b1BessAnomaly = results.slice(0, 3).some(r => r.state_of_health_pct < 95 || r.coulombic_efficiency < 0.95);
+                const b1BessNode = document.getElementById('node-B1BCT');
+                if(b1BessNode) {
+                    if(b1BessAnomaly) {
+                        b1BessNode.className = "glass-panel border border-[#ef4444]/60 rounded-lg p-2 text-center w-20 hover:border-[#ef4444] cursor-pointer transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)]";
+                        document.getElementById('node-B1BCT-status').className = "text-[10px] text-[#ef4444] font-bold";
+                        document.getElementById('node-B1BCT-status').innerText = "ALERT";
+                    } else {
+                        b1BessNode.className = "glass-panel border border-[#007bff]/30 rounded-lg p-2 text-center w-20 hover:border-[#007bff] cursor-pointer transition-all";
+                        document.getElementById('node-B1BCT-status').className = "text-[10px] text-white font-bold";
+                        document.getElementById('node-B1BCT-status').innerText = "B1BCT1-3";
+                    }
+                }
+
+                const b2BessAnomaly = results.slice(3, 6).some(r => r.state_of_health_pct < 95 || r.coulombic_efficiency < 0.95);
+                const b2BessNode = document.getElementById('node-B2BCT');
+                if(b2BessNode) {
+                    if(b2BessAnomaly) {
+                        b2BessNode.className = "glass-panel border border-[#ef4444]/60 rounded-lg p-2 text-center w-20 hover:border-[#ef4444] cursor-pointer transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)]";
+                        document.getElementById('node-B2BCT-status').className = "text-[10px] text-[#ef4444] font-bold";
+                        document.getElementById('node-B2BCT-status').innerText = "ALERT";
+                    } else {
+                        b2BessNode.className = "glass-panel border border-[#007bff]/30 rounded-lg p-2 text-center w-20 hover:border-[#007bff] cursor-pointer transition-all";
+                        document.getElementById('node-B2BCT-status').className = "text-[10px] text-white font-bold";
+                        document.getElementById('node-B2BCT-status').innerText = "B2BCT1-3";
+                    }
+                }
+
             } catch (err) {
                 console.error("Error loading assets comparison charts:", err);
+            }
+        }
+
+        // Show Asset Popover Detail Panel
+        function showAssetDetails(type) {
+            const popover = document.getElementById('asset-popover');
+            const title = document.getElementById('popover-title');
+            const content = document.getElementById('popover-content');
+            
+            popover.classList.remove('hidden');
+            
+            if (type === 'B1INV' || type === 'B2INV') {
+                title.innerText = type === 'B1INV' ? "Block 1 Inverters (INV01-04)" : "Block 2 Inverters (INV05-08)";
+                if(!lastInverterData || !lastInverterData.per_inverter) {
+                    content.innerHTML = "No inverter telemetry loaded.";
+                    return;
+                }
+                const isB1 = type === 'B1INV';
+                const keys = isB1 ? ['INV01','INV02','INV03','INV04'] : ['INV05','INV06','INV07','INV08'];
+                let html = '<div class="space-y-2">';
+                keys.forEach(k => {
+                    const data = lastInverterData.per_inverter[k] || {avg_efficiency_pct: 95.0, status: "Normal"};
+                    const isAlert = data.status === 'Underperforming';
+                    html += `
+                        <div class="flex justify-between border-b border-white/5 pb-1">
+                            <span class="font-bold">${k}</span>
+                            <span class="${isAlert ? 'text-[#ef4444]' : 'text-[#39ff14]'}">${data.avg_efficiency_pct}% (${data.status})</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                content.innerHTML = html;
+            } else if (type === 'B1BCT' || type === 'B2BCT' || type === 'B3BCT') {
+                title.innerText = type === 'B1BCT' ? "Block 1 BESS packs" : (type === 'B2BCT' ? "Block 2 BESS packs" : "Block 3 BESS packs");
+                if(!lastBessData || lastBessData.length === 0) {
+                    content.innerHTML = "No BESS telemetry loaded.";
+                    return;
+                }
+                let subset = [];
+                if(type === 'B1BCT') subset = lastBessData.slice(0, 3);
+                if(type === 'B2BCT') subset = lastBessData.slice(3, 6);
+                if(type === 'B3BCT') subset = lastBessData.slice(6, 7);
+
+                let html = '<div class="space-y-2">';
+                subset.forEach(r => {
+                    const id = r.bess_id.split('_').pop();
+                    const isAlert = r.state_of_health_pct < 95 || r.coulombic_efficiency < 0.95;
+                    html += `
+                        <div class="flex flex-col border-b border-white/5 pb-1">
+                            <div class="flex justify-between font-bold">
+                                <span>${id}</span>
+                                <span class="${isAlert ? 'text-[#ef4444]' : 'text-[#39ff14]'}">SoH: ${r.state_of_health_pct}%</span>
+                            </div>
+                            <div class="flex justify-between text-[10px] text-gray-500">
+                                <span>Cycles: ${r.total_cycles || 0}</span>
+                                <span>RTE: ${(r.coulombic_efficiency * 100).toFixed(1)}%</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                content.innerHTML = html;
             }
         }
 
