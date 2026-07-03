@@ -1,542 +1,558 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JioSunGenie Platform - AI/ML Solar Portal</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com" rel="preconnect"/>
-    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Sora:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- SEC-05: API key for /api/* calls. Injected by app_server.py at serve time. -->
-    <script>
-        window.SUNGENIE_API_KEY = "";
-        function apiHeaders(extra) {
-            const h = Object.assign({}, extra || {});
-            if (window.SUNGENIE_API_KEY) h['X-API-Key'] = window.SUNGENIE_API_KEY;
-            return h;
-        }
-        function withKey(url) {
-            if (!window.SUNGENIE_API_KEY) return url;
-            return url + (url.includes('?') ? '&' : '?') + 'api_key=' + encodeURIComponent(window.SUNGENIE_API_KEY);
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SunGenie - Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Sora:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "on-primary": "#053900",
+                        "tertiary-fixed": "#ffdfa0",
+                        "on-error": "#690005",
+                        "surface-variant": "#333539",
+                        "on-primary-fixed": "#022100",
+                        "surface-container": "#1e2024",
+                        "primary-fixed-dim": "#2ae500",
+                        "on-secondary-fixed": "#001a41",
+                        "secondary": "#adc7ff",
+                        "on-background": "#e2e2e8",
+                        "surface-container-high": "#282a2e",
+                        "secondary-fixed-dim": "#adc7ff",
+                        "on-surface-variant": "#baccb0",
+                        "primary-fixed": "#79ff5b",
+                        "on-secondary": "#002e68",
+                        "on-primary-fixed-variant": "#095300",
+                        "outline-variant": "#3c4b35",
+                        "surface-container-lowest": "#0c0e12",
+                        "tertiary-fixed-dim": "#fbbc00",
+                        "surface-dim": "#111318",
+                        "on-secondary-container": "#00285b",
+                        "inverse-surface": "#e2e2e8",
+                        "error-container": "#93000a",
+                        "surface": "#111318",
+                        "background": "#111318",
+                        "on-tertiary": "#402d00",
+                        "on-primary-container": "#107100",
+                        "on-tertiary-container": "#7c5c00",
+                        "surface-container-low": "#1a1c20",
+                        "tertiary": "#fff8f3",
+                        "inverse-on-surface": "#2f3035",
+                        "secondary-container": "#4a8eff",
+                        "primary": "#efffe3",
+                        "on-tertiary-fixed": "#261a00",
+                        "secondary-fixed": "#d8e2ff",
+                        "surface-container-highest": "#333539",
+                        "surface-tint": "#2ae500",
+                        "surface-bright": "#37393e",
+                        "on-secondary-fixed-variant": "#004493",
+                        "on-tertiary-fixed-variant": "#5c4300",
+                        "primary-container": "#39ff14",
+                        "outline": "#85967c",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#106e00",
+                        "tertiary-container": "#ffd88a",
+                        "on-surface": "#e2e2e8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "gutter": "24px",
+                        "unit": "4px",
+                        "margin-desktop": "40px",
+                        "container-max": "1440px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Sora"],
+                        "headline-md": ["Sora"],
+                        "headline-lg-mobile": ["Sora"],
+                        "display-lg": ["Sora"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
         }
     </script>
-    <style>
+<style>
         body {
-            background-color: #0A0C10;
+            background-color: #111318;
             color: #e2e2e8;
-            font-family: 'Inter', sans-serif;
-            overflow: hidden;
+            overflow-x: hidden;
         }
+        
         .glass-panel {
-            background: linear-gradient(135deg, rgba(30, 32, 36, 0.45) 0%, rgba(30, 32, 36, 0.15) 100%);
+            background: linear-gradient(135deg, rgba(30, 32, 36, 0.4) 0%, rgba(30, 32, 36, 0.1) 100%);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            border-left: 1px solid rgba(255, 255, 255, 0.08);
-            border-right: 1px solid rgba(255, 255, 255, 0.03);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
+
         .glow-effect {
-            box-shadow: 0 0 15px rgba(57, 255, 20, 0.15);
+            box-shadow: 0 0 15px rgba(42, 229, 0, 0.15);
         }
+        
         .glow-text {
-            text-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+            text-shadow: 0 0 10px rgba(42, 229, 0, 0.5);
         }
+
+        /* Custom Scrollbar for Chat */
         .custom-scrollbar::-webkit-scrollbar {
             width: 4px;
-            height: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.01);
+            background: rgba(255, 255, 255, 0.02);
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 4px;
         }
-        .tab-btn.active {
-            border-bottom-color: #39ff14;
-            color: #39ff14;
-            text-shadow: 0 0 8px rgba(57, 255, 20, 0.3);
+        
+        /* Simple chart animations */
+        @keyframes drawLine {
+            to { stroke-dashoffset: 0; }
         }
-        .tab-content {
-            display: none;
+        .animate-line {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawLine 2s ease-out forwards;
         }
-        .tab-content.active {
-            display: block;
+        
+        @keyframes fillUp {
+            from { height: 0; }
         }
-        .markdown-content h1, .markdown-content h2, .markdown-content h3 { font-family: 'Sora', sans-serif; font-weight: 600; margin-top: 0.75rem; margin-bottom: 0.5rem; }
-        .markdown-content h1 { font-size: 1.1rem; }
-        .markdown-content h2 { font-size: 1rem; }
-        .markdown-content p { margin-bottom: 0.5rem; font-size: 0.85rem; line-height: 1.5; color: #a0aec0; }
-        .markdown-content ul { list-style-type: disc; margin-left: 1.25rem; margin-bottom: 0.5rem; font-size: 0.85rem; }
-        .markdown-content code { background-color: rgba(255,255,255,0.1); padding: 0.1rem 0.3rem; border-radius: 4px; font-family: monospace; font-size: 0.8rem; }
+        .animate-bar {
+            transform-origin: bottom;
+            animation: fillUp 1s ease-out forwards;
+        }
     </style>
+
+<style>
+/* SLD Tree styling */
+.tree-node {
+    width: 180px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(30, 32, 36, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+    transition: all 0.3s;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+.tree-node:hover {
+    transform: translateY(-2px);
+    border-color: rgba(57, 255, 20, 0.5);
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
+}
+.tree-node.status-healthy {
+    border-color: rgba(57, 255, 20, 0.3);
+}
+.tree-node.status-warning {
+    border-color: rgba(255, 191, 0, 0.5);
+    box-shadow: 0 0 15px rgba(255, 191, 0, 0.15);
+}
+.tree-node.status-alert {
+    border-color: rgba(255, 68, 68, 0.7);
+    box-shadow: 0 0 15px rgba(255, 68, 68, 0.3);
+}
+.tree-line {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.1);
+    z-index: 1;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
-<body class="flex h-screen w-full selection:bg-[#39ff14]/30 selection:text-white overflow-hidden">
-<!-- Global Background Glows -->
+<body class="flex h-screen w-full selection:bg-primary-container selection:text-on-primary-container">
+<!-- Global Background Elements -->
 <div class="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
-    <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-[#39ff14]/5 blur-[120px]"></div>
-    <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#007bff]/5 blur-[100px]"></div>
+<div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary-fixed-dim/5 blur-[120px]"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-secondary-container/5 blur-[100px]"></div>
+</div>
+<!-- SideNavBar (Desktop Only) -->
+<nav class="hidden md:flex flex-col py-6 bg-surface-container/20 backdrop-blur-2xl border-r border-white/10 shadow-2xl h-full w-20 hover:w-64 transition-all duration-500 overflow-hidden z-[60] group flex-shrink-0 fixed left-0 top-0">
+<!-- Header -->
+<div class="flex items-center px-4 mb-8 w-64">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center shrink-0 border border-white/10 shadow-[0_0_15px_rgba(42,229,0,0.2)]">
+<span class="material-symbols-outlined text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<div class="font-headline-md text-headline-md font-bold text-primary tracking-tight"></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Precision Control</div>
+</div>
+</div>
+<!-- Main Nav -->
+
+<div class="flex-1 w-64 flex flex-col gap-2 px-3 mt-4" id="sidebar-nav">
+    <a id="nav-dashboard" onclick="switchTab('dashboard-view')" class="nav-link active-nav flex items-center px-3 py-3 rounded-xl transition-all ease-in-out duration-300 text-primary drop-shadow-[0_0_8px_rgba(42,229,0,0.8)] border-l-4 border-primary bg-primary/5 cursor-pointer">
+        <span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+        <span class="ml-4 font-label-md text-label-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Dashboard</span>
+    </a>
+    <a id="nav-assets" onclick="switchTab('assets-view')" class="nav-link flex items-center px-3 py-3 rounded-xl transition-all ease-in-out duration-300 text-on-surface-variant/60 hover:bg-white/5 hover:text-primary-fixed border-l-4 border-transparent cursor-pointer">
+        <span class="material-symbols-outlined shrink-0">solar_power</span>
+        <span class="ml-4 font-label-md text-label-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Assets</span>
+    </a>
+    <a id="nav-settings" onclick="switchTab('settings-view')" class="nav-link flex items-center px-3 py-3 rounded-xl transition-all ease-in-out duration-300 text-on-surface-variant/60 hover:bg-white/5 hover:text-primary-fixed border-l-4 border-transparent cursor-pointer">
+        <span class="material-symbols-outlined shrink-0">settings</span>
+        <span class="ml-4 font-label-md text-label-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Settings</span>
+    </a>
 </div>
 
-<!-- Left SideNavBar (Stitch hover navigation) -->
-<nav class="hidden md:flex flex-col py-6 bg-[#0c0e12]/40 backdrop-blur-2xl border-r border-white/5 shadow-2xl h-full w-20 hover:w-64 transition-all duration-500 overflow-hidden z-[60] group flex-shrink-0 fixed left-0 top-0">
-    <div class="flex items-center px-4 mb-8 w-64">
-        <div class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center shrink-0 border border-white/10 shadow-[0_0_15px_rgba(57,255,20,0.2)]">
-            <span class="material-symbols-outlined text-[#39ff14]" style="font-variation-settings: 'FILL' 1;">bolt</span>
-        </div>
-        <div class="ml-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div class="font-headline-md text-lg font-bold text-[#39ff14] tracking-tight">SunGenie</div>
-            <div class="text-[10px] text-gray-400 uppercase tracking-wider">Precision Control</div>
-        </div>
-    </div>
-    <div class="flex-1 w-64 flex flex-col gap-2 px-3 mt-4">
-        <button id="nav-btn-dashboard" onclick="switchView('dashboard')" class="nav-btn flex items-center px-3 py-3 w-full rounded-xl text-[#39ff14] bg-[#39ff14]/5 border-l-4 border-[#39ff14]">
-            <span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-            <span class="ml-4 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">Dashboard</span>
-        </button>
-        <button id="nav-btn-analytics" onclick="switchView('analytics')" class="nav-btn flex items-center px-3 py-3 w-full rounded-xl text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent">
-            <span class="material-symbols-outlined shrink-0">monitoring</span>
-            <span class="ml-4 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">Analytics</span>
-        </button>
-        <button id="nav-btn-assets" onclick="switchView('assets')" class="nav-btn flex items-center px-3 py-3 w-full rounded-xl text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent">
-            <span class="material-symbols-outlined shrink-0">solar_power</span>
-            <span class="ml-4 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">Assets</span>
-        </button>
-        <button id="nav-btn-settings" onclick="switchView('settings')" class="nav-btn flex items-center px-3 py-3 w-full rounded-xl text-gray-400 hover:bg-white/5 hover:text-white border-l-4 border-transparent">
-            <span class="material-symbols-outlined shrink-0">settings</span>
-            <span class="ml-4 text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">Settings</span>
-        </button>
-    </div>
+<!-- CTA -->
+<div class="px-4 mb-4 w-64 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<button onclick="document.getElementById('ai-panel').classList.remove('translate-x-full', 'xl:translate-x-0'); document.getElementById('ai-panel').classList.add('!translate-x-0')" class="w-full bg-primary-container text-on-primary-container font-label-md text-label-md py-2 px-4 rounded-lg flex justify-center items-center gap-2 hover:bg-primary transition-colors shadow-[0_0_10px_rgba(57,255,20,0.3)]">
+<span class="material-symbols-outlined text-sm">terminal</span>
+                Command Center
+            </button>
+</div>
+<!-- Footer Nav -->
+<div class="w-64 flex flex-col gap-1 px-3 border-t border-white/5 pt-4">
+<a class="flex items-center px-3 py-2 rounded-xl transition-all ease-in-out duration-300 text-on-surface-variant/60 hover:bg-white/5 hover:text-primary-fixed" href="#">
+<span class="material-symbols-outlined shrink-0 text-sm">help</span>
+<span class="ml-4 font-label-sm text-label-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Support</span>
+</a>
+<a class="flex items-center px-3 py-2 rounded-xl transition-all ease-in-out duration-300 text-on-surface-variant/60 hover:bg-white/5 hover:text-error" href="#">
+<span class="material-symbols-outlined shrink-0 text-sm">logout</span>
+<span class="ml-4 font-label-sm text-label-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Logout</span>
+</a>
+</div>
 </nav>
-
-<!-- Main Workspace -->
+<!-- Main Workspace Area -->
 <main class="flex-1 ml-0 md:ml-20 mr-0 xl:mr-80 flex flex-col h-screen overflow-hidden transition-all duration-300">
-    <!-- Header -->
-    <header class="h-20 flex-shrink-0 flex items-center justify-between px-8 border-b border-white/5 bg-[#0c0e12]/20 backdrop-blur-md relative z-10">
-        <div>
-            <h1 class="text-xl font-bold text-white tracking-tight">SunGenie Platform</h1>
-            <div class="flex items-center gap-2 mt-1">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#39ff14] opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-[#39ff14]"></span>
-                </span>
-                <span class="text-[10px] text-gray-400 uppercase tracking-wider">Live Solar O&M Portal</span>
-            </div>
+<!-- TopAppBar Contextual (Not Full Shell) -->
+<header class="h-20 flex-shrink-0 flex items-center justify-between px-gutter border-b border-white/5 glass-panel z-10 relative">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-white">Dashboard</h1>
+<div class="flex items-center gap-2 mt-1">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-fixed opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary-fixed"></span>
+</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">1.2GW Global Portfolio - Active</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-full hover:bg-white/5 text-on-surface-variant transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full border border-surface"></span>
+</button>
+<div class="h-8 w-px bg-white/10 mx-2"></div>
+
+<div class="flex items-center gap-2">
+    <select id="timeframe-select" onchange="onTimeframeChange()" class="bg-surface-container border border-white/10 text-white rounded-lg text-xs py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer">
+        <option value="live">Live (All Data)</option>
+        <option value="today">Today (June 24)</option>
+        <option value="yesterday">Yesterday (June 23/24)</option>
+        <option value="week" selected>Last 7 Days</option>
+        <option value="custom">Custom Range</option>
+    </select>
+    <div id="custom-range-inputs" style="display: none;" class="items-center gap-2">
+        <input type="date" id="start-date" onchange="onCustomDateChange()" class="bg-surface-container border border-white/10 text-white rounded-lg text-xs py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-primary">
+        <span class="text-on-surface-variant text-xs">to</span>
+        <input type="date" id="end-date" onchange="onCustomDateChange()" class="bg-surface-container border border-white/10 text-white rounded-lg text-xs py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-primary">
+    </div>
+</div>
+
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<div class="flex-1 overflow-y-auto p-gutter custom-scrollbar pb-24 xl:pb-gutter">
+<div id="dashboard-view" class="tab-content active flex flex-col w-full h-full">
+<!-- High-Level KPIs Sparklines Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-gutter">
+<!-- Yield -->
+<div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-primary-fixed/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">solar_power</span>
+<span class="font-label-sm text-label-sm uppercase">Total Yield</span>
+</div>
+<span class="text-primary-fixed font-label-sm text-label-sm flex items-center gap-1 bg-primary-fixed/10 px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[10px]">arrow_upward</span> <span id="kpi-gen-sub">--</span>
+                        </span>
+</div>
+<div class="font-display-lg text-display-lg text-white glow-text"><span id="kpi-gen">-- / --</span> <span class="font-headline-md text-headline-md text-on-surface-variant">GWh</span></div>
+<!-- Decor Sparkline -->
+<div class="absolute bottom-0 left-0 w-full h-8 opacity-20">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 20">
+<path d="M0,20 L0,15 Q10,5 20,10 T40,15 T60,5 T80,12 T100,2 L100,20 Z" fill="#79ff5b"></path>
+</svg>
+</div>
+</div>
+<!-- PR -->
+<div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-primary-fixed/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">analytics</span>
+<span class="font-label-sm text-label-sm uppercase">Avg PR</span>
+</div>
+<span class="text-primary-fixed font-label-sm text-label-sm flex items-center gap-1 bg-primary-fixed/10 px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[10px]">arrow_upward</span> <span id="kpi-avail">--</span>
+                        </span>
+</div>
+<div class="font-display-lg text-display-lg text-white"><span id="kpi-pr">--</span> <span class="font-headline-md text-headline-md text-on-surface-variant">%</span></div>
+</div>
+<!-- BESS -->
+<div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-secondary/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">battery_charging_full</span>
+<span class="font-label-sm text-label-sm uppercase">BESS Active</span>
+</div>
+<span class="text-on-surface font-label-sm text-label-sm flex items-center gap-1 bg-surface-variant px-2 py-0.5 rounded">
+                            <span id="kpi-bess-sub">--</span>
+                        </span>
+</div>
+<div class="font-display-lg text-display-lg text-white"><span id="kpi-bess">--</span> <span class="font-headline-md text-headline-md text-on-surface-variant">MW</span></div>
+</div>
+<!-- Open Tickets -->
+<div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-error/30 transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">assignment_late</span>
+<span class="font-label-sm text-label-sm uppercase">Critical Tickets</span>
+</div>
+<span class="text-error font-label-sm text-label-sm flex items-center gap-1 bg-error-container/50 px-2 py-0.5 rounded">
+<span class="material-symbols-outlined text-[10px]">warning</span> Action Req
+                        </span>
+</div>
+<div class="font-display-lg text-display-lg text-error"><span id="kpi-thermal">--</span></div>
+</div>
+</div>
+<!-- Main Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- 1. PR Gap (Performance Ratio) - Wide Chart -->
+<div class="lg:col-span-2 glass-panel rounded-xl p-6 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h2 class="font-headline-md text-headline-md text-white">PR Gap Analysis</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Actual vs Expected Yield (Last 24h)</p>
+</div>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-primary-fixed glow-effect"></div>
+<span class="font-label-sm text-label-sm text-on-surface">Actual</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full border-2 border-secondary border-dashed"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Expected</span>
+</div>
+</div>
+</div>
+
+<!-- Chart Area -->
+<div class="flex-1 min-h-[300px] relative mt-4">
+    <canvas id="prGapChart"></canvas>
+</div>
+</div>
+
+<!-- Expected Line (Dashed) -->
+<svg class="absolute inset-0 h-full w-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<path class="opacity-50" d="M0,80 Q10,75 20,60 T40,40 T60,30 T80,50 T100,60" fill="none" stroke="#adc7ff" stroke-dasharray="4,4" stroke-width="2"></path>
+</svg>
+<!-- Actual Line (Solid with fill) -->
+<svg class="absolute inset-0 h-full w-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<!-- Gradient Def -->
+<defs>
+<lineargradient id="prGradient" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#79ff5b" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#79ff5b" stop-opacity="0.0"></stop>
+</lineargradient>
+</defs>
+<path d="M0,85 Q10,70 20,65 T40,45 T60,25 T80,55 T100,65 L100,100 L0,100 Z" fill="url(#prGradient)"></path>
+<path class="animate-line shadow-[0_0_8px_#79ff5b]" d="M0,85 Q10,70 20,65 T40,45 T60,25 T80,55 T100,65" fill="none" stroke="#79ff5b" stroke-width="3"></path>
+</svg>
+<!-- X Axis Labels -->
+<div class="absolute -bottom-6 left-0 w-full flex justify-between text-[10px] text-on-surface-variant font-label-sm">
+<span>00:00</span>
+<span>06:00</span>
+<span>12:00</span>
+<span>18:00</span>
+<span>24:00</span>
+</div>
+</div>
+</div>
+
+<!-- 2. Inverter Efficiency -->
+<div class="glass-panel rounded-xl p-6 flex flex-col">
+    <h2 class="font-headline-md text-headline-md text-white mb-1">Inverter Efficiency</h2>
+    <div class="flex-1 min-h-[250px] relative mt-4">
+        <canvas id="effCurveChart"></canvas>
+    </div>
+</div>
+
+
+<!-- 3. Curtailment -->
+<div class="glass-panel rounded-xl p-6 flex flex-col items-center justify-center relative overflow-hidden">
+    <h2 class="font-headline-md text-headline-md text-white absolute top-6 left-6">Curtailment</h2>
+    <div class="relative w-full h-48 mt-8">
+        <canvas id="curtailmentChart"></canvas>
+    </div>
+</div>
+
+</div>
+
+<!-- 4. Additional Charts Row -->
+<div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-gutter">
+    <div class="glass-panel rounded-xl p-6 relative overflow-hidden group">
+        <h2 class="font-headline-md text-headline-md text-white mb-1 relative z-10">Soiling Impact</h2>
+        <div class="w-full min-h-[250px] relative mt-4">
+            <canvas id="soilingChart"></canvas>
         </div>
+    </div>
+    <div class="glass-panel rounded-xl p-6 flex flex-col">
+        <h2 class="font-headline-md text-headline-md text-white mb-1 relative z-10">Irradiance Correlation</h2>
+        <div class="w-full min-h-[250px] relative mt-4">
+            <canvas id="irrScatterChart"></canvas>
+        </div>
+    </div>
+</div>
+</div>
+
+</div>
+</div>
+
+</div> <!-- End Dashboard view -->
+
+<!-- Assets View -->
+<div id="assets-view" class="tab-content hidden flex flex-col w-full h-full p-gutter">
+    <div class="glass-panel rounded-xl p-6">
+        <h2 class="font-headline-lg text-headline-lg text-white mb-4">Plant Asset Hierarchy</h2>
+        <div class="text-on-surface-variant font-label-md mb-6">Select an asset from the Single Line Diagram below to view details.</div>
         
-        <!-- Controls area -->
-        <div class="flex items-center gap-4">
-            <select id="timeframe-select" onchange="onTimeframeChange()" class="bg-[#1e2024] border border-white/10 text-white rounded-lg text-xs py-1.5 px-3 focus:outline-none focus:ring-1 focus:ring-[#39ff14] cursor-pointer">
-                <option value="live">Live (All Data)</option>
-                <option value="today">Today (June 24)</option>
-                <option value="yesterday">Yesterday (June 23/24)</option>
-                <option value="week" selected>Last 7 Days</option>
-                <option value="custom">Custom Range</option>
-            </select>
-            <div id="custom-range-inputs" class="hidden items-center gap-2">
-                <input type="date" id="start-date" onchange="onCustomDateChange()" class="bg-[#1e2024] border border-white/10 text-white text-xs rounded-lg py-1 px-2 focus:outline-none">
-                <input type="date" id="end-date" onchange="onCustomDateChange()" class="bg-[#1e2024] border border-white/10 text-white text-xs rounded-lg py-1 px-2 focus:outline-none">
+        <div class="relative w-full overflow-auto bg-surface-container/50 rounded-xl p-8 border border-white/5 min-h-[600px]">
+            <div id="tree-container" class="relative mx-auto flex flex-col items-center">
+                <!-- Javascript will inject nodes here -->
             </div>
-            <div id="window-indicator" class="text-[10px] bg-[#39ff14]/10 text-[#39ff14] border border-[#39ff14]/30 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">Window: All data</div>
-            <div class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">WMS: Active</div>
-        </div>
-    </header>
-
-    <!-- Scrollable Workspace Dashboard -->
-    <div class="flex-1 overflow-y-auto p-8 custom-scrollbar pb-24">
-        
-        <!-- ==================== DASHBOARD VIEW ==================== -->
-        <div id="dashboard-view" class="view-content active space-y-6">
-            <!-- KPI Grid 1 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Expected vs Actual -->
-                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Expected vs Actual</div>
-                    <div id="kpi-gen" class="text-xl font-bold text-white">--- / ---</div>
-                    <div id="kpi-gen-sub" class="text-xs text-[#39ff14] font-semibold mt-2">Gap: --- kWh</div>
-                </div>
-                <!-- Performance Ratio -->
-                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Performance Ratio</div>
-                    <div id="kpi-pr" class="text-xl font-bold text-white">0.---</div>
-                    <div class="text-xs text-[#029676] font-semibold mt-2">Target: 0.85</div>
-                </div>
-                <!-- BESS Health -->
-                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">BESS Health (SoH)</div>
-                    <div id="kpi-bess" class="text-xl font-bold text-white">--.- %</div>
-                    <div id="kpi-bess-sub" class="text-xs text-[#39ff14] font-semibold mt-2">Cycles: --</div>
-                </div>
-                <!-- Thermal Anomalies -->
-                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Thermal Anomalies</div>
-                    <div id="kpi-thermal" class="text-xl font-bold text-white">--</div>
-                    <div id="kpi-thermal-sub" class="text-xs text-[#f59e0b] font-semibold mt-2">Max Delta: -- °C</div>
-                </div>
-            </div>
-
-            <!-- Single dashboard main chart -->
-            <div class="glass-panel rounded-xl p-6 flex flex-col">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">PR Gap Loss Attribution</h3>
-                    <span class="text-[10px] bg-[#39ff14]/10 text-[#39ff14] border border-[#39ff14]/30 px-2 py-0.5 rounded uppercase font-semibold">ML Model</span>
-                </div>
-                <div class="relative w-full h-[250px]"><canvas id="prGapChart"></canvas></div>
-            </div>
-
-            <!-- Bottom panels -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Panel 1: SCB Outliers -->
-                <div class="glass-panel rounded-xl p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">String Combiner (SCB) Outliers</h3>
-                        <span class="text-[10px] bg-[#ef4444]/10 text-[#ef4444] border border-[#ef4444]/30 px-2 py-0.5 rounded uppercase font-semibold">Z-Score</span>
-                    </div>
-                    <div class="overflow-y-auto max-h-[180px] custom-scrollbar">
-                        <table class="w-full text-left text-xs border-collapse" id="scb-outliers-table">
-                            <thead>
-                                <tr class="border-b border-white/10 text-gray-400">
-                                    <th class="pb-2 font-semibold">String</th>
-                                    <th class="pb-2 font-semibold">Current (A)</th>
-                                    <th class="pb-2 font-semibold">Z-Score</th>
-                                    <th class="pb-2 font-semibold">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-white">
-                                <tr><td colspan="4" class="text-center py-4 text-gray-500">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Panel 2: Soiling ROI -->
-                <div class="glass-panel rounded-xl p-6 flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-sm font-bold text-white uppercase tracking-wider">Soiling ROI Planner</h3>
-                            <span class="text-[10px] bg-[#39ff14]/10 text-[#39ff14] border border-[#39ff14]/30 px-2 py-0.5 rounded uppercase font-semibold">Cleaning ROI</span>
-                        </div>
-                        <div class="text-xs text-gray-400 space-y-2">
-                            <div class="flex justify-between"><span>Last Washed:</span><span id="roi-last-clean" class="text-white font-semibold">---</span></div>
-                            <div class="flex justify-between"><span>Days Elapsed:</span><span id="roi-days-elapsed" class="text-white font-semibold">---</span></div>
-                            <div class="flex justify-between text-sm pt-2"><span>Cumulative Loss:</span><span id="roi-loss-inr" class="text-[#f59e0b] font-bold">₹---</span></div>
-                            
-                            <!-- Progress bar container -->
-                            <div class="w-full h-2.5 bg-white/5 rounded-full overflow-hidden my-2 relative">
-                                <div id="roi-progress-bar" class="h-full bg-gradient-to-r from-[#39ff14] to-[#ef4444] rounded-full transition-all duration-500" style="width: 0%;"></div>
-                            </div>
-                            <div class="flex justify-between text-[10px] text-gray-500">
-                                <span>Clean Status</span>
-                                <span>Threshold: ₹15,000</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="roi-recommendation" class="text-xs font-semibold p-2.5 rounded-lg text-center bg-white/5 mt-4 text-gray-200">
-                        Loading ROI analysis...
-                    </div>
-                </div>
-
-                <!-- Panel 3: Reports / Recommendations -->
-                <div class="glass-panel rounded-xl p-6 flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-sm font-bold text-white uppercase tracking-wider">O&M Recommendations</h3>
-                            <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">Reporting</span>
-                        </div>
-                        <div id="om-summary-box" class="text-xs text-gray-400 leading-relaxed max-h-[100px] overflow-y-auto custom-scrollbar">
-                            Loading diagnostics...
-                        </div>
-                    </div>
-                    <div class="border-t border-white/5 pt-4 flex gap-2 items-center">
-                        <select id="report-format-select" class="bg-[#1e2024] border border-white/10 text-white rounded-lg text-xs py-1.5 px-3 focus:outline-none cursor-pointer">
-                            <option value="csv">CSV Spreadsheet</option>
-                            <option value="html">HTML Webpage</option>
-                        </select>
-                        <button onclick="downloadReport()" class="flex-1 bg-[#39ff14] text-[#0A0C10] font-bold py-1.5 px-4 rounded-lg text-xs hover:bg-[#39ff14]/80 transition-colors shadow-[0_0_10px_rgba(57,255,20,0.3)]">
-                            Generate & Download
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ==================== ANALYTICS VIEW ==================== -->
-        <div id="analytics-view" class="view-content hidden space-y-6">
-            <!-- KPI Row 2 from old layout -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Inverter Efficiency -->
-                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Inverter Efficiency</div>
-                    <div id="kpi-eff" class="text-xl font-bold text-white">--.- %</div>
-                    <div id="kpi-eff-sub" class="text-xs text-[#4AB5C4] font-semibold mt-2">Fleet Average</div>
-                </div>
-                <!-- Plant Availability -->
-                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Plant Availability</div>
-                    <div id="kpi-avail" class="text-xl font-bold text-white">--.- %</div>
-                    <div id="kpi-avail-sub" class="text-xs text-[#f59e0b] font-semibold mt-2">Curtailment: -- h</div>
-                </div>
-                <!-- Daily Soiling Rate -->
-                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Daily Soiling Rate</div>
-                    <div id="kpi-soiling" class="text-xl font-bold text-white">-.--- %</div>
-                    <div id="kpi-soiling-sub" class="text-xs text-[#ef4444] font-semibold mt-2">Loss Trend</div>
-                </div>
-                <!-- Irradiance R2 -->
-                <div class="glass-panel rounded-xl p-4 flex flex-col justify-between relative overflow-hidden group hover:border-[#39ff14]/30 transition-colors">
-                    <div class="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Irradiance R²</div>
-                    <div id="kpi-r2" class="text-xl font-bold text-white">0.---</div>
-                    <div id="kpi-r2-sub" class="text-xs text-[#029676] font-semibold mt-2">POA Correlation</div>
-                </div>
-            </div>
-
-            <!-- Tabbed Analytics Content (rest of the charts) -->
-            <div class="flex gap-4 border-b border-white/5">
-                <button id="tab-btn-diagnostics" class="tab-btn active border-b-2 border-transparent pb-2 font-semibold text-xs tracking-wider uppercase transition-all" onclick="switchTab('diagnostics')">Diagnostics & Conversion</button>
-                <button id="tab-btn-forecast" class="tab-btn border-b-2 border-transparent pb-2 font-semibold text-xs tracking-wider uppercase transition-all" onclick="switchTab('forecast')">BESS Dispatch Schedule</button>
-            </div>
-
-            <!-- Tab 1: Diagnostics (3 charts) -->
-            <div id="tab-diagnostics" class="tab-content active">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="glass-panel rounded-xl p-6 flex flex-col">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Inverter Conversion Curves</h3>
-                            <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">Load Analysis</span>
-                        </div>
-                        <div class="relative w-full h-[220px]"><canvas id="effCurveChart"></canvas></div>
-                    </div>
-                    <div class="glass-panel rounded-xl p-6 flex flex-col">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Irradiance vs Power Scatter</h3>
-                            <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">Correlation</span>
-                        </div>
-                        <div class="relative w-full h-[220px]"><canvas id="irradianceChart"></canvas></div>
-                    </div>
-                    <div class="glass-panel rounded-xl p-6 flex flex-col">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-xs font-bold text-white uppercase tracking-wider">Operating States Breakdown</h3>
-                            <span class="text-[10px] bg-[#f59e0b]/10 text-[#f59e0b] border border-[#f59e0b]/30 px-2 py-0.5 rounded uppercase font-semibold">Grid Analysis</span>
-                        </div>
-                        <div class="relative w-full h-[220px]"><canvas id="curtailmentChart"></canvas></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Tab 2: Forecast -->
-            <div id="tab-forecast" class="tab-content">
-                <div class="glass-panel rounded-xl p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">24-Hour Optimization & BESS Dispatch</h3>
-                        <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">BESS Dispatch</span>
-                    </div>
-                    <div class="relative w-full h-[280px]"><canvas id="forecastChart"></canvas></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ==================== ASSETS VIEW ==================== -->
-        <div id="assets-view" class="view-content hidden space-y-6">
             
-            <!-- Jamnagar Solar Plant SLD Topology (Interactive Hierarchy) -->
-            <div class="flex flex-col items-center justify-center p-6 bg-[#0c0e12]/20 border border-white/5 rounded-xl glass-panel relative overflow-x-auto min-w-[900px] mb-6">
-                <h2 class="text-md font-bold text-white mb-6 uppercase tracking-wider text-center">Jamnagar Solar Plant Single Line Diagram (SLD)</h2>
-                
-                <!-- Tree Hierarchy Structure -->
-                <div class="flex flex-col items-center w-full">
-                    <!-- Root node -->
-                    <div class="flex flex-col items-center">
-                        <div id="node-root" class="glass-panel border border-[#39ff14]/30 rounded-lg p-3 text-center w-52 shadow-lg">
-                            <div class="text-[9px] text-gray-400 uppercase tracking-wider font-semibold">Root Station</div>
-                            <div class="text-xs font-bold text-white">Jamnagar Solar Plant</div>
-                            <div class="text-[9px] text-[#39ff14] font-semibold mt-1">Status: Active</div>
-                        </div>
-                        <div class="w-0.5 h-6 bg-white/10"></div>
-                    </div>
-                    
-                    <!-- Second level: Blocks -->
-                    <div class="flex justify-between w-full max-w-[800px] relative px-4">
-                        <!-- Connecting horizontal line -->
-                        <div class="absolute top-0 left-[16.5%] right-[16.5%] h-0.5 bg-white/10"></div>
-                        
-                        <!-- Block 1 -->
-                        <div class="flex flex-col items-center w-1/3">
-                            <div class="w-0.5 h-4 bg-white/10"></div>
-                            <div id="node-B1" class="glass-panel border border-[#39ff14]/20 rounded-lg p-2.5 text-center w-40">
-                                <div class="text-[8px] text-gray-400 uppercase">Sub-Division</div>
-                                <div class="text-xs font-bold text-white">Block 1 (Alpha)</div>
-                                <div class="text-[9px] text-gray-400 mt-1" id="node-B1-metric">Loading...</div>
-                            </div>
-                            <div class="w-0.5 h-6 bg-white/10"></div>
-                            
-                            <!-- Block 1 Assets -->
-                            <div class="flex gap-2">
-                                <div id="node-B1INV" class="glass-panel border border-white/10 rounded-lg p-2 text-center w-20 hover:border-[#39ff14]/50 cursor-pointer transition-all" onclick="showAssetDetails('B1INV')">
-                                    <div class="text-[9px] text-gray-500 font-bold">INVERTERS</div>
-                                    <div class="text-[10px] text-white font-bold" id="node-B1INV-status">INV01-04</div>
-                                </div>
-                                <div id="node-B1BCT" class="glass-panel border border-white/10 rounded-lg p-2 text-center w-20 hover:border-[#007bff]/50 cursor-pointer transition-all" onclick="showAssetDetails('B1BCT')">
-                                    <div class="text-[9px] text-gray-500 font-bold">BESS</div>
-                                    <div class="text-[10px] text-white font-bold" id="node-B1BCT-status">B1BCT1-3</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Block 2 -->
-                        <div class="flex flex-col items-center w-1/3">
-                            <div class="w-0.5 h-4 bg-white/10"></div>
-                            <div id="node-B2" class="glass-panel border border-[#39ff14]/20 rounded-lg p-2.5 text-center w-40">
-                                <div class="text-[8px] text-gray-400 uppercase">Sub-Division</div>
-                                <div class="text-xs font-bold text-white">Block 2 (Beta)</div>
-                                <div class="text-[9px] text-gray-400 mt-1" id="node-B2-metric">Loading...</div>
-                            </div>
-                            <div class="w-0.5 h-6 bg-white/10"></div>
-                            
-                            <!-- Block 2 Assets -->
-                            <div class="flex gap-2">
-                                <div id="node-B2INV" class="glass-panel border border-white/10 rounded-lg p-2 text-center w-20 hover:border-[#39ff14]/50 cursor-pointer transition-all" onclick="showAssetDetails('B2INV')">
-                                    <div class="text-[9px] text-gray-500 font-bold">INVERTERS</div>
-                                    <div class="text-[10px] text-white font-bold" id="node-B2INV-status">INV05-08</div>
-                                </div>
-                                <div id="node-B2BCT" class="glass-panel border border-white/10 rounded-lg p-2 text-center w-20 hover:border-[#007bff]/50 cursor-pointer transition-all" onclick="showAssetDetails('B2BCT')">
-                                    <div class="text-[9px] text-gray-500 font-bold">BESS</div>
-                                    <div class="text-[10px] text-white font-bold" id="node-B2BCT-status">B2BCT1-3</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Block 3 -->
-                        <div class="flex flex-col items-center w-1/3">
-                            <div class="w-0.5 h-4 bg-white/10"></div>
-                            <div id="node-B3" class="glass-panel border border-[#39ff14]/20 rounded-lg p-2.5 text-center w-40">
-                                <div class="text-[8px] text-gray-400 uppercase">Sub-Division</div>
-                                <div class="text-xs font-bold text-white">Block 3 (Aux)</div>
-                                <div class="text-[9px] text-gray-400 mt-1" id="node-B3-metric">Active</div>
-                            </div>
-                            <div class="w-0.5 h-6 bg-white/10"></div>
-                            
-                            <!-- Block 3 Assets -->
-                            <div class="flex gap-2">
-                                <div id="node-B3BCT" class="glass-panel border border-white/10 rounded-lg p-2 text-center w-20 hover:border-[#007bff]/50 cursor-pointer transition-all" onclick="showAssetDetails('B3BCT')">
-                                    <div class="text-[9px] text-gray-500 font-bold">BESS</div>
-                                    <div class="text-[10px] text-white font-bold" id="node-B3BCT-status">B3BCT2</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Popover panel for details -->
-                <div id="asset-popover" class="hidden absolute top-4 right-4 glass-panel border border-white/10 bg-[#111318]/95 p-4 rounded-xl w-64 text-xs space-y-2 z-20 shadow-2xl">
-                    <div class="flex justify-between items-center border-b border-white/10 pb-1.5 mb-1.5">
-                        <h4 class="font-bold text-white" id="popover-title">Asset Details</h4>
-                        <button onclick="document.getElementById('asset-popover').classList.add('hidden')" class="text-gray-400 hover:text-white">✕</button>
-                    </div>
-                    <div class="space-y-1 text-gray-400" id="popover-content">
-                        Click on an Inverter or BESS group to see details.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Comparison Charts Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Chart 1: Inverters comparison -->
-                <div class="glass-panel rounded-xl p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Inverter Conversion Efficiency Comparison</h3>
-                        <span class="text-[10px] bg-[#39ff14]/10 text-[#39ff14] border border-[#39ff14]/30 px-2 py-0.5 rounded uppercase font-semibold">Inverters</span>
-                    </div>
-                    <div class="relative w-full h-[260px]"><canvas id="assetsInverterChart"></canvas></div>
-                </div>
-                <!-- Chart 2: BESS Health comparison -->
-                <div class="glass-panel rounded-xl p-6 flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">BESS Packs SoH & Coulombic Efficiency</h3>
-                        <span class="text-[10px] bg-[#007bff]/10 text-[#007bff] border border-[#007bff]/30 px-2 py-0.5 rounded uppercase font-semibold">BESS Fleet</span>
-                    </div>
-                    <div class="relative w-full h-[260px]"><canvas id="assetsBessChart"></canvas></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ==================== SETTINGS VIEW ==================== -->
-        <div id="settings-view" class="view-content hidden space-y-6">
-            <div class="glass-panel rounded-xl p-6">
-                <h2 class="text-xl font-bold text-white mb-2">Platform Settings</h2>
-                <p class="text-xs text-gray-400">Configure parameters for RAG backend and O&M thresholds.</p>
-            </div>
-            <div class="glass-panel rounded-xl p-6 max-w-xl">
-                <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Alert Thresholds</h3>
-                <div class="space-y-4 text-xs text-gray-400">
-                    <div>
-                        <label class="block mb-1">SCB Current Anomaly Threshold (Z-Score)</label>
-                        <input type="text" value="-2.0" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
-                    </div>
-                    <div>
-                        <label class="block mb-1">Max Inverter Temperature Limit (°C)</label>
-                        <input type="text" value="85.0" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
-                    </div>
-                    <div>
-                        <label class="block mb-1">Wash Cycle Target Interval (Days)</label>
-                        <input type="text" value="15" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
-                    </div>
-                    <button class="bg-[#39ff14] text-[#0A0C10] font-bold py-2 px-4 rounded-lg text-xs hover:bg-[#39ff14]/80 transition-colors">
-                        Save Configurations
+            <div id="asset-details-panel" class="absolute top-8 right-8 w-80 glass-panel rounded-xl border border-white/10 shadow-2xl p-6 transition-all duration-300 opacity-0 pointer-events-none transform translate-y-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="panel-title" class="text-white font-headline-md">Asset Details</h3>
+                    <button onclick="document.getElementById('asset-details-panel').classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0'); document.getElementById('asset-details-panel').classList.add('opacity-0', 'pointer-events-none', 'translate-y-4')" class="text-on-surface-variant hover:text-white">
+                        <span class="material-symbols-outlined">close</span>
                     </button>
                 </div>
+                <div id="panel-content" class="space-y-4"></div>
             </div>
         </div>
-
     </div>
+</div>
+
+<!-- Settings View -->
+<div id="settings-view" class="tab-content hidden flex flex-col w-full h-full p-gutter">
+    <div class="glass-panel rounded-xl p-6 max-w-2xl">
+        <h2 class="font-headline-lg text-headline-lg text-white mb-6">System Settings</h2>
+        
+        <div class="space-y-6">
+            <div class="bg-surface-container rounded-lg p-4 border border-white/5">
+                <h3 class="text-white font-headline-md mb-2">Threshold Configuration</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-on-surface-variant font-label-md">PR Alert Threshold (%)</span>
+                        <input type="number" value="75" class="bg-surface border border-white/10 text-white rounded px-3 py-1 w-24">
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-on-surface-variant font-label-md">Inverter Efficiency Alert (%)</span>
+                        <input type="number" value="95" class="bg-surface border border-white/10 text-white rounded px-3 py-1 w-24">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-surface-container rounded-lg p-4 border border-white/5">
+                <h3 class="text-white font-headline-md mb-2">API Configuration</h3>
+                <div class="flex justify-between items-center">
+                    <span class="text-on-surface-variant font-label-md">API Key</span>
+                    <input type="password" value="********" class="bg-surface border border-white/10 text-white rounded px-3 py-1 w-48">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
 </main>
 
-<!-- Right Sidebar Chat Panel (Docked Right) -->
-<aside class="fixed right-0 bottom-0 z-40 flex flex-col p-4 border-l border-white/10 bg-[#0c0e12]/30 backdrop-blur-lg docked right-0 h-[calc(100%-80px)] w-80 shadow-xl transition-transform duration-300" id="ai-panel">
-    <div class="flex items-center gap-3 border-b border-white/10 pb-4 mb-4">
-        <div class="w-10 h-10 rounded-full bg-[#007bff]/10 flex items-center justify-center border border-[#007bff]/30 relative">
-            <span class="material-symbols-outlined text-[#007bff]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
-            <div class="absolute bottom-0 right-0 w-3 h-3 bg-[#39ff14] rounded-full border-2 border-[#0A0C10]"></div>
+<!-- SideNavBar (AI Assistant) - Docked Right -->
+<aside class="fixed right-0 top-0 z-40 flex flex-col p-4 border-l border-white/10 bg-surface-container-low/95 backdrop-blur-2xl right-0 h-full w-80 shadow-2xl translate-x-full transition-transform duration-300" id="ai-panel">
+    <!-- Close Button -->
+    <button class="absolute -left-12 top-4 bg-surface-container text-on-surface p-2 rounded-l-lg shadow-lg border border-r-0 border-white/10" onclick="document.getElementById('ai-panel').classList.add('translate-x-full'); document.getElementById('ai-panel').classList.remove('!translate-x-0')">
+        <span class="material-symbols-outlined">close</span>
+    </button>
+    
+    <!-- Header -->
+    <div class="flex items-center gap-3 border-b border-white/10 pb-4 mb-4 mt-2">
+        <div class="w-10 h-10 rounded-full bg-primary-container/20 flex items-center justify-center border border-primary/30 relative">
+            <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+            <div class="absolute bottom-0 right-0 w-3 h-3 bg-primary-fixed rounded-full border-2 border-surface-container-low"></div>
         </div>
         <div>
-            <h2 class="font-semibold text-sm text-[#007bff]">JioSunGenie AI</h2>
-            <p class="text-[10px] text-gray-400 uppercase tracking-wider">Solar Assistant</p>
+            <h2 class="font-label-md text-label-md text-primary">Solar AI</h2>
+            <p class="font-label-sm text-[10px] text-on-surface-variant">Active Analysis</p>
         </div>
     </div>
     
-    <!-- Chat messages -->
-    <div id="chat-box" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pr-2 font-medium text-xs scroll-smooth mb-4">
+    <!-- Chat History -->
+    <div id="chat-messages" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pr-2 font-body-md text-body-md scroll-smooth mb-4">
+        <!-- Initial Message -->
         <div class="flex flex-col gap-1 max-w-[90%]">
-            <span class="text-[10px] text-gray-400 ml-2">Solar AI</span>
-            <div class="bg-[#1e2024]/40 border border-white/10 text-white rounded-xl rounded-tl-sm p-3 shadow-md markdown-content">
-                Hello! I am your SunGenie AI. I have compiled the Jamnagar telemetry DB and calibrated <strong>8 ML pipelines</strong>: PR Gap, SCB String Outliers, Soiling Rate, BESS SoH, Inverter Efficiency, Irradiance Correlation, Thermal Anomaly, and Grid Curtailment.
-                <br><br>Use the quick-actions or type any query.
+            <span class="font-label-sm text-[10px] text-on-surface-variant ml-2">Solar AI</span>
+            <div class="bg-primary/10 text-primary-fixed rounded-xl rounded-tl-sm p-3 shadow-md border border-primary/20">
+                Hello! I can analyze the plant telemetry and identify anomalies. How can I help you?
             </div>
         </div>
     </div>
-
-    <!-- Chat suggestions (Quick actions) -->
-    <div class="flex flex-wrap gap-1.5 mb-2 px-1">
-        <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('What is the overall generation performance and PR gap breakdown for the plant?')">PR Gap Breakdown</button>
-        <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('Are there any underperforming strings on Inverter B1INV1?')">String Outlier Check</button>
-        <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('What is the health and cycle count of battery B1BCT1?')">Battery Health Status</button>
-        <button class="bg-white/10 hover:bg-white/20 text-white rounded-full px-3 py-1 text-[10px] border border-white/10 transition-colors" onclick="sendQ('What is the inverter fleet DC-AC conversion efficiency across different load levels?')">Inverter Efficiency</button>
+    
+    <!-- Typing indicator -->
+    <div id="chat-typing-indicator" class="hidden flex items-center gap-2 mb-4 px-2">
+        <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-fixed opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-primary-fixed"></span></span>
+        <span class="text-xs text-on-surface-variant">AI is analyzing...</span>
     </div>
-
-    <!-- Input area -->
+    
+    <!-- Input Area -->
     <div class="mt-auto relative">
-        <input id="user-input" class="w-full bg-[#1e2024] border-0 border-b border-white/20 focus:border-[#39ff14] focus:ring-0 text-white text-xs py-3 pl-4 pr-12 transition-colors rounded-t-lg" placeholder="Ask AI to analyze data..." type="text" onkeydown="if(event.key === 'Enter') sendMessage()"/>
-        <button id="send-btn" onclick="sendMessage()" class="absolute right-2 top-1/2 -translate-y-1/2 text-[#39ff14] hover:text-[#39ff14]/80 transition-colors p-1 bg-[#39ff14]/10 rounded-full">
-            <span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">send</span>
+        <input id="chat-input" class="w-full bg-surface border border-white/20 focus:border-primary-fixed focus:ring-1 focus:ring-primary-fixed text-white font-body-md text-sm py-3 pl-4 pr-12 transition-all rounded-lg shadow-lg" placeholder="Ask AI to analyze data..." type="text"/>
+        <button id="chat-send" class="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-primary-fixed transition-colors p-1 bg-primary/10 rounded-full">
+            <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">send</span>
         </button>
     </div>
 </aside>
 
-<div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 <script>
 let charts = {};
         let lastInverterData = null;
@@ -835,7 +851,27 @@ let charts = {};
             return { start, end };
         }
 
-        function switchTab(tabId) {
+        
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.remove('hidden');
+    document.getElementById(tabId).classList.add('active');
+    
+    document.querySelectorAll('.nav-link').forEach(el => {
+        el.classList.remove('active-nav', 'text-primary', 'drop-shadow-[0_0_8px_rgba(42,229,0,0.8)]', 'border-primary', 'bg-primary/5');
+        el.classList.add('text-on-surface-variant/60', 'border-transparent');
+    });
+    const activeNav = document.getElementById('nav-' + tabId.replace('-view', ''));
+    if (activeNav) {
+        activeNav.classList.remove('text-on-surface-variant/60', 'border-transparent');
+        activeNav.classList.add('active-nav', 'text-primary', 'drop-shadow-[0_0_8px_rgba(42,229,0,0.8)]', 'border-primary', 'bg-primary/5');
+    }
+    
+    if (tabId === 'assets-view') {
+        setTimeout(renderSLDTree, 100);
+    }
+
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             
