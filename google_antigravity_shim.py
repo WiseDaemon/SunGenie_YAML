@@ -29,7 +29,8 @@ def _call_nvidia(model_name, api_key, messages, temperature=0.2, max_tokens=3276
         "stream": stream,
     }
     resp = requests.post(config.NVIDIA_URL, headers=headers, json=payload, stream=stream)
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        raise ValueError(f"Nvidia API Error ({resp.status_code}): {resp.text}")
     if stream:
         return resp.iter_lines()
     return resp.json()
