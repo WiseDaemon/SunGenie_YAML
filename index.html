@@ -382,33 +382,6 @@
 </div>
 </div>
 
-<!-- Expected Line (Dashed) -->
-<svg class="absolute inset-0 h-full w-full" preserveaspectratio="none" viewbox="0 0 100 100">
-<path class="opacity-50" d="M0,80 Q10,75 20,60 T40,40 T60,30 T80,50 T100,60" fill="none" stroke="#adc7ff" stroke-dasharray="4,4" stroke-width="2"></path>
-</svg>
-<!-- Actual Line (Solid with fill) -->
-<svg class="absolute inset-0 h-full w-full" preserveaspectratio="none" viewbox="0 0 100 100">
-<!-- Gradient Def -->
-<defs>
-<lineargradient id="prGradient" x1="0%" x2="0%" y1="0%" y2="100%">
-<stop offset="0%" stop-color="#79ff5b" stop-opacity="0.3"></stop>
-<stop offset="100%" stop-color="#79ff5b" stop-opacity="0.0"></stop>
-</lineargradient>
-</defs>
-<path d="M0,85 Q10,70 20,65 T40,45 T60,25 T80,55 T100,65 L100,100 L0,100 Z" fill="url(#prGradient)"></path>
-<path class="animate-line shadow-[0_0_8px_#79ff5b]" d="M0,85 Q10,70 20,65 T40,45 T60,25 T80,55 T100,65" fill="none" stroke="#79ff5b" stroke-width="3"></path>
-</svg>
-<!-- X Axis Labels -->
-<div class="absolute -bottom-6 left-0 w-full flex justify-between text-[10px] text-on-surface-variant font-label-sm">
-<span>00:00</span>
-<span>06:00</span>
-<span>12:00</span>
-<span>18:00</span>
-<span>24:00</span>
-</div>
-</div>
-</div>
-
 <!-- 2. Inverter Efficiency -->
 <div class="glass-panel rounded-xl p-6 flex flex-col">
     <h2 class="font-headline-md text-headline-md text-white mb-1">Inverter Efficiency</h2>
@@ -417,7 +390,6 @@
     </div>
 </div>
 
-
 <!-- 3. Curtailment -->
 <div class="glass-panel rounded-xl p-6 flex flex-col items-center justify-center relative overflow-hidden">
     <h2 class="font-headline-md text-headline-md text-white absolute top-6 left-6">Curtailment</h2>
@@ -425,26 +397,113 @@
         <canvas id="curtailmentChart"></canvas>
     </div>
 </div>
+<!-- 4. Critical Tickets
+ & Thermal (Combined Area) -->
+<div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Thermal Anomalies (Placeholder for visual interest) -->
+<div class="glass-panel rounded-xl p-6 relative overflow-hidden group">
+<h2 class="font-headline-md text-headline-md text-white mb-1 relative z-10">Thermal Scan</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 relative z-10">Drone IR Survey - Block C</p>
+<!-- Abstract representation of thermal data -->
+<div class="w-full h-40 bg-surface-container rounded-lg overflow-hidden relative border border-white/5">
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-error/40 via-surface-container to-surface-container"></div>
+<div class="absolute top-1/4 left-1/4 w-8 h-8 rounded-full bg-error blur-[10px] animate-pulse"></div>
+<div class="absolute bottom-1/3 right-1/4 w-12 h-12 rounded-full bg-tertiary-fixed-dim blur-[15px] opacity-70"></div>
+<!-- Overlay Grid -->
+<div class="absolute inset-0" style="background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 20px 20px;"></div>
+<!-- Scan line -->
+<div class="absolute top-0 left-0 w-full h-[2px] bg-primary-fixed/50 shadow-[0_0_10px_#79ff5b] animate-[scan_3s_linear_infinite]"></div>
+<style>
+                                @keyframes scan {
+                                    0% { top: 0; opacity: 0; }
+                                    10% { opacity: 1; }
+                                    90% { opacity: 1; }
+                                    100% { top: 100%; opacity: 0; }
+                                }
+                            </style>
+
+<style>
+/* SLD Tree styling */
+.tree-node {
+    width: 180px;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(30, 32, 36, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+    transition: all 0.3s;
+    cursor: pointer;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+.tree-node:hover {
+    transform: translateY(-2px);
+    border-color: rgba(57, 255, 20, 0.5);
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
+}
+.tree-node.status-healthy {
+    border-color: rgba(57, 255, 20, 0.3);
+}
+.tree-node.status-warning {
+    border-color: rgba(255, 191, 0, 0.5);
+    box-shadow: 0 0 15px rgba(255, 191, 0, 0.15);
+}
+.tree-node.status-alert {
+    border-color: rgba(255, 68, 68, 0.7);
+    box-shadow: 0 0 15px rgba(255, 68, 68, 0.3);
+}
+.tree-line {
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.1);
+    z-index: 1;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 </div>
-
-<!-- 4. Additional Charts Row -->
-<div class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-gutter">
-    <div class="glass-panel rounded-xl p-6 relative overflow-hidden group">
-        <h2 class="font-headline-md text-headline-md text-white mb-1 relative z-10">Soiling Impact</h2>
-        <div class="w-full min-h-[250px] relative mt-4">
-            <canvas id="soilingChart"></canvas>
-        </div>
-    </div>
-    <div class="glass-panel rounded-xl p-6 flex flex-col">
-        <h2 class="font-headline-md text-headline-md text-white mb-1 relative z-10">Irradiance Correlation</h2>
-        <div class="w-full min-h-[250px] relative mt-4">
-            <canvas id="irrScatterChart"></canvas>
-        </div>
-    </div>
+</div>
+<!-- Critical Tickets List -->
+<div class="glass-panel rounded-xl p-6 flex flex-col">
+<div class="flex justify-between items-center mb-4">
+<h2 class="font-headline-md text-headline-md text-white">Active Tasks</h2>
+<button class="font-label-sm text-label-sm text-primary hover:underline">View All</button>
+</div>
+<div class="flex flex-col gap-3 flex-1 overflow-y-auto custom-scrollbar pr-2">
+<!-- Ticket 1 -->
+<div class="bg-surface/50 border border-error/30 rounded-lg p-3 hover:bg-surface transition-colors cursor-pointer border-l-2 border-l-error">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-label-md text-label-md text-white">Inverter 04 Overheating</h3>
+<span class="text-[10px] bg-error/20 text-error px-2 py-0.5 rounded font-label-sm">High</span>
+</div>
+<div class="flex items-center gap-4 mt-2 font-label-sm text-[10px] text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span> 2h ago</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">person</span> O&amp;M Team Alpha</span>
 </div>
 </div>
-
+<!-- Ticket 2 -->
+<div class="bg-surface/50 border border-white/5 rounded-lg p-3 hover:bg-surface transition-colors cursor-pointer border-l-2 border-l-tertiary-fixed-dim">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-label-md text-label-md text-white">String 12 Cleaning Req</h3>
+<span class="text-[10px] bg-tertiary-fixed-dim/20 text-tertiary-fixed-dim px-2 py-0.5 rounded font-label-sm">Med</span>
+</div>
+<div class="flex items-center gap-4 mt-2 font-label-sm text-[10px] text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span> 1d ago</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">cleaning_services</span> Vendor B</span>
+</div>
+</div>
+<!-- Ticket 3 -->
+<div class="bg-surface/50 border border-white/5 rounded-lg p-3 hover:bg-surface transition-colors cursor-pointer border-l-2 border-l-white/20">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-label-md text-label-md text-white">Firmware Update CB-01</h3>
+<span class="text-[10px] bg-white/10 text-white px-2 py-0.5 rounded font-label-sm">Low</span>
+</div>
+</div>
+</div>
+</div>
+</div>
 </div>
 </div>
 
@@ -852,7 +911,27 @@ let charts = {};
         }
 
         
+
 function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.remove('hidden');
+    document.getElementById(tabId).classList.add('active');
+    
+    document.querySelectorAll('.nav-link').forEach(el => {
+        el.classList.remove('active-nav', 'text-primary', 'drop-shadow-[0_0_8px_rgba(42,229,0,0.8)]', 'border-primary', 'bg-primary/5');
+        el.classList.add('text-on-surface-variant/60', 'border-transparent');
+    });
+    const activeNav = document.getElementById('nav-' + tabId.replace('-view', ''));
+    if (activeNav) {
+        activeNav.classList.remove('text-on-surface-variant/60', 'border-transparent');
+        activeNav.classList.add('active-nav', 'text-primary', 'drop-shadow-[0_0_8px_rgba(42,229,0,0.8)]', 'border-primary', 'bg-primary/5');
+    }
+    
+    if (tabId === 'assets-view') {
+        setTimeout(renderSLDTree, 100);
+    }
+
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.getElementById(tabId).classList.remove('hidden');
