@@ -587,7 +587,7 @@
     </div>
     
     <!-- Chat History -->
-    <div id="chat-messages" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pr-2 font-body-md text-body-md scroll-smooth mb-4">
+    <div id="ai-chat-messages" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pr-2 font-body-md text-body-md scroll-smooth mb-4">
         <!-- Initial Message -->
         <div class="flex flex-col gap-1 max-w-[90%]">
             <span class="font-label-sm text-[10px] text-on-surface-variant ml-2">Solar AI</span>
@@ -598,15 +598,15 @@
     </div>
     
     <!-- Typing indicator -->
-    <div id="chat-typing-indicator" class="hidden flex items-center gap-2 mb-4 px-2">
+    <div id="ai-typing-indicator" class="hidden flex items-center gap-2 mb-4 px-2">
         <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-fixed opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-primary-fixed"></span></span>
         <span class="text-xs text-on-surface-variant">AI is analyzing...</span>
     </div>
     
     <!-- Input Area -->
     <div class="mt-auto relative">
-        <input id="chat-input" class="w-full bg-surface border border-white/20 focus:border-primary-fixed focus:ring-1 focus:ring-primary-fixed text-white font-body-md text-sm py-3 pl-4 pr-12 transition-all rounded-lg shadow-lg" placeholder="Ask AI to analyze data..." type="text"/>
-        <button id="chat-send" class="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-primary-fixed transition-colors p-1 bg-primary/10 rounded-full">
+        <input id="ai-chat-input" class="w-full bg-surface border border-white/20 focus:border-primary-fixed focus:ring-1 focus:ring-primary-fixed text-white font-body-md text-sm py-3 pl-4 pr-12 transition-all rounded-lg shadow-lg" placeholder="Ask AI to analyze data..." type="text"/>
+        <button id="ai-send-btn" class="absolute right-2 top-1/2 -translate-y-1/2 text-primary hover:text-primary-fixed transition-colors p-1 bg-primary/10 rounded-full">
             <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">send</span>
         </button>
     </div>
@@ -912,7 +912,27 @@ let charts = {};
 
         
 
+
 function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.remove('hidden');
+    document.getElementById(tabId).classList.add('active');
+    
+    document.querySelectorAll('.nav-link').forEach(el => {
+        el.classList.remove('active-nav', 'text-primary', 'drop-shadow-[0_0_8px_rgba(42,229,0,0.8)]', 'border-primary', 'bg-primary/5');
+        el.classList.add('text-on-surface-variant/60', 'border-transparent');
+    });
+    const activeNav = document.getElementById('nav-' + tabId.replace('-view', ''));
+    if (activeNav) {
+        activeNav.classList.remove('text-on-surface-variant/60', 'border-transparent');
+        activeNav.classList.add('active-nav', 'text-primary', 'drop-shadow-[0_0_8px_rgba(42,229,0,0.8)]', 'border-primary', 'bg-primary/5');
+    }
+    
+    if (tabId === 'assets-view') {
+        setTimeout(renderSLDTree, 100);
+    }
+
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.getElementById(tabId).classList.remove('hidden');
