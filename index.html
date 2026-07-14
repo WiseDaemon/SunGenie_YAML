@@ -5,10 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JioSunGenie Platform - AI/ML Solar Portal</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#39ff14',       /* Neon Green */
+                        accent: '#549E39',        /* Accent green */
+                        slateGreen: '#455F51',   /* Slate green/Beige tone */
+                        warmGray: '#E3DED1',     /* Warm gray */
+                        surface: '#0A0C10',
+                        onSurface: '#e2e2e8',
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+                        display: ['Sora', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Sora:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&amp;family=Sora:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- SEC-05: API key for /api/* calls. Injected by app_server.py at serve time. -->
@@ -28,17 +48,21 @@
         body {
             background-color: #0A0C10;
             color: #e2e2e8;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
             overflow: hidden;
         }
         .glass-panel {
-            background: linear-gradient(135deg, rgba(30, 32, 36, 0.45) 0%, rgba(30, 32, 36, 0.15) 100%);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            border-left: 1px solid rgba(255, 255, 255, 0.08);
-            border-right: 1px solid rgba(255, 255, 255, 0.03);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            background: linear-gradient(135deg, rgba(69, 95, 81, 0.15) 0%, rgba(10, 12, 16, 0.5) 100%);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-panel:hover {
+            border: 1px solid rgba(57, 255, 20, 0.15);
+            box-shadow: 0 8px 32px 0 rgba(57, 255, 20, 0.03);
+            transform: translateY(-2px);
         }
         .glow-effect {
             box-shadow: 0 0 15px rgba(57, 255, 20, 0.15);
@@ -239,6 +263,9 @@
                     <div id="roi-recommendation" class="text-xs font-semibold p-2.5 rounded-lg text-center bg-white/5 mt-4 text-gray-200">
                         Loading ROI analysis...
                     </div>
+                    <button onclick="logCleaningEvent()" class="text-xs font-bold text-center bg-[#39ff14]/10 hover:bg-[#39ff14]/20 border border-[#39ff14]/30 text-[#39ff14] p-2.5 rounded-lg w-full mt-3 transition-colors">
+                        Log Panel Wash Event
+                    </button>
                 </div>
 
                 <!-- Panel 3: Reports / Recommendations -->
@@ -478,7 +505,7 @@
                         <input type="text" value="-2.0" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
                     </div>
                     <div>
-                        <label class="block mb-1">Max Inverter Temperature Limit (°C)</label>
+                        <label class="block mb-1">Max Inverter Temperature Limit (C)</label>
                         <input type="text" value="85.0" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
                     </div>
                     <div>
@@ -487,6 +514,31 @@
                     </div>
                     <button class="bg-[#39ff14] text-[#0A0C10] font-bold py-2 px-4 rounded-lg text-xs hover:bg-[#39ff14]/80 transition-colors">
                         Save Configurations
+                    </button>
+                </div>
+            </div>
+            
+            <div class="glass-panel rounded-xl p-6 max-w-xl">
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Algorithm Calibration Config</h3>
+                <div class="space-y-4 text-xs text-gray-400">
+                    <div>
+                        <label class="block mb-1">Plant AC Capacity (kW)</label>
+                        <input id="cfg-capacity" type="number" step="0.1" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
+                    </div>
+                    <div>
+                        <label class="block mb-1">System Loss Factor</label>
+                        <input id="cfg-loss-factor" type="number" step="0.01" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
+                    </div>
+                    <div>
+                        <label class="block mb-1">Average Curtailed Power (kW)</label>
+                        <input id="cfg-curtailed-kw" type="number" step="0.1" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
+                    </div>
+                    <div>
+                        <label class="block mb-1">Hardware Loss Share</label>
+                        <input id="cfg-hardware-share" type="number" step="0.01" class="w-full bg-[#1e2024] border border-white/10 rounded-lg text-white p-2">
+                    </div>
+                    <button onclick="saveCalibrationConfig()" class="bg-[#39ff14] text-[#0A0C10] font-bold py-2 px-4 rounded-lg text-xs hover:bg-[#39ff14]/80 transition-colors">
+                        Save Calibration
                     </button>
                 </div>
             </div>
@@ -568,6 +620,9 @@ let charts = {};
             Object.values(charts).forEach(c => { if(c) c.resize(); });
             if (charts['assetsInverter']) charts['assetsInverter'].resize();
             if (charts['assetsBess']) charts['assetsBess'].resize();
+            if (viewId === 'settings') {
+                loadCalibrationConfig();
+            }
         }
 
         // Draw Assets comparison charts and update SLD tree live status
@@ -2246,6 +2301,80 @@ let charts = {};
                 }
             } catch (err) {
                 console.error("Feedback failed", err);
+            }
+        }
+
+        async function logCleaningEvent() {
+            if (!confirm("Are you sure you want to log a panel wash (cleaning) event for today?")) return;
+            try {
+                const response = await fetch('/api/events', {
+                    method: 'POST',
+                    headers: apiHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({
+                        event_type: 'cleaning',
+                        notes: 'Logged manually via Soiling ROI dashboard widget'
+                    })
+                });
+                if (response.ok) {
+                    showToast('Info', 'Panel wash event logged successfully!');
+                    fetchAll();
+                } else {
+                    const data = await response.json();
+                    showToast('Critical', 'Failed to log event: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                showToast('Critical', 'Error: ' + e.message);
+            }
+        }
+
+        async function loadCalibrationConfig() {
+            try {
+                const response = await fetch(withKey('/api/config'), {
+                    headers: apiHeaders()
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('cfg-capacity').value = data.PLANT_CAPACITY_KW;
+                    document.getElementById('cfg-loss-factor').value = data.LOSS_FACTOR;
+                    document.getElementById('cfg-curtailed-kw').value = data.AVG_CURTAILED_KW;
+                    document.getElementById('cfg-hardware-share').value = data.HARDWARE_LOSS_SHARE;
+                }
+            } catch (e) {
+                console.error("Failed to load calibration settings:", e);
+            }
+        }
+
+        async function saveCalibrationConfig() {
+            const cap = parseFloat(document.getElementById('cfg-capacity').value);
+            const loss = parseFloat(document.getElementById('cfg-loss-factor').value);
+            const curt = parseFloat(document.getElementById('cfg-curtailed-kw').value);
+            const hw = parseFloat(document.getElementById('cfg-hardware-share').value);
+
+            if (isNaN(cap) || isNaN(loss) || isNaN(curt) || isNaN(hw)) {
+                showToast('Warning', 'All calibration values must be valid numbers.');
+                return;
+            }
+
+            try {
+                const response = await fetch(withKey('/api/config'), {
+                    method: 'POST',
+                    headers: apiHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({
+                        PLANT_CAPACITY_KW: cap,
+                        LOSS_FACTOR: loss,
+                        AVG_CURTAILED_KW: curt,
+                        HARDWARE_LOSS_SHARE: hw
+                    })
+                });
+                if (response.ok) {
+                    showToast('Info', 'Calibration settings updated successfully!');
+                    fetchAll();
+                } else {
+                    const data = await response.json();
+                    showToast('Critical', 'Failed to save configuration: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                showToast('Critical', 'Error: ' + e.message);
             }
         }
 

@@ -13,10 +13,50 @@ DB_PATH = config.DB_PATH
 # --- Shared physical / heuristic constants (LOG-01b) ------------------------
 # Single source of truth so curtailment energy is computed the same way
 # everywhere (previously 8648 kW in PR-gap vs 4000 kW in curtailment).
-PLANT_CAPACITY_KW = 8648.0     # AC nameplate capacity
-LOSS_FACTOR = 0.85             # system loss factor for the expected-generation model
-AVG_CURTAILED_KW = 4000.0      # assumed avg power lost per curtailment interval
-HARDWARE_LOSS_SHARE = 0.25     # heuristic BOS loss share (cabling, transformer) — an assumption
+def get_db_config(key, default_val):
+    conn = None
+    val = default_val
+    try:
+        import os
+        if os.path.exists(config.EVENTS_DB_PATH):
+            conn = sqlite3.connect(config.EVENTS_DB_PATH)
+            cursor = conn.cursor()
+            cursor.execute("SELECT count(*) FROM sqlite_master WHERE type='table' AND name='app_config'")
+            if cursor.fetchone()[0] > 0:
+                cursor.execute("SELECT value FROM app_config WHERE key = ?", (key,))
+                row = cursor.fetchone()
+                if row is not None:
+                    val = float(row[0])
+    except Exception:
+        pass
+    finally:
+        if conn is not None:
+            conn.close()
+    return val
+
+def get_plant_capacity():
+    return get_db_config('PLANT_CAPACITY_KW', 8648.0)
+
+def get_loss_factor():
+    return get_db_config('LOSS_FACTOR', 0.85)
+
+def get_avg_curtailed_kw():
+    return get_db_config('AVG_CURTAILED_KW', 4000.0)
+
+def get_hardware_loss_share():
+    return get_db_config('HARDWARE_LOSS_SHARE', 0.25)
+
+# Maintain module-level attribute access compatibility
+def __getattr__(name):
+    if name == 'PLANT_CAPACITY_KW':
+        return get_plant_capacity()
+    elif name == 'LOSS_FACTOR':
+        return get_loss_factor()
+    elif name == 'AVG_CURTAILED_KW':
+        return get_avg_curtailed_kw()
+    elif name == 'HARDWARE_LOSS_SHARE':
+        return get_hardware_loss_share()
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 import threading
 
@@ -97,7 +137,7 @@ def get_expected_vs_actual_generation(date_str=None, start_time=None, end_time=N
     df_w['planeOfArraySensor01'] = df_w['planeOfArraySensor01'].fillna(0)
     df_w['moduleTemperatureSensor01'] = df_w['moduleTemperatureSensor01'].fillna(25)
     
-    expected_power = PLANT_CAPACITY_KW * (df_w['planeOfArraySensor01'] / 1000.0) * (1 - 0.004 * (df_w['moduleTemperatureSensor01'] - 25.0)) * LOSS_FACTOR
+    expected_power = get_plant_capacity() * (df_w['planeOfArraySensor01'] / 1000.0) * (1 - 0.004 * (df_w['moduleTemperatureSensor01'] - 25.0)) * get_loss_factor()
     # clip at 0
     expected_power = np.clip(expected_power, 0, None)
     expected_kwh = expected_power.mean() * (len(df_w) * 5 / 60) # average kW * total hours
@@ -126,8 +166,8 @@ def get_expected_vs_actual_generation(date_str=None, start_time=None, end_time=N
         
     # Calibrate gap attribution
     if gap_kwh > 0:
-        curtailment_share = min(1.0, (curtailment_hours * AVG_CURTAILED_KW) / gap_kwh)
-        hardware_share = HARDWARE_LOSS_SHARE # heuristic BOS loss share (assumption)
+        curtailment_share = min(1.0, (curtailment_hours * get_avg_curtailed_kw()) / gap_kwh)
+        hardware_share = get_hardware_loss_share() # heuristic BOS loss share (assumption)
         soiling_calib = calibrate_soiling_rate(start_time, end_time)
         measured_soiling = abs(soiling_calib.get("avg_daily_soiling_rate_pct", 0.22))
         soiling_share = min(0.60, measured_soiling * 2.0)
@@ -153,10 +193,10 @@ def get_expected_vs_actual_generation(date_str=None, start_time=None, end_time=N
         "attribution": attribution,
         # LOG-01b: surface the (partly heuristic) assumptions behind the split.
         "assumptions": {
-            "plant_capacity_kw": PLANT_CAPACITY_KW,
-            "loss_factor": LOSS_FACTOR,
-            "avg_curtailed_kw": AVG_CURTAILED_KW,
-            "hardware_loss_share": HARDWARE_LOSS_SHARE,
+            "plant_capacity_kw": get_plant_capacity(),
+            "loss_factor": get_loss_factor(),
+            "avg_curtailed_kw": get_avg_curtailed_kw(),
+            "hardware_loss_share": get_hardware_loss_share(),
             "soiling_share_source": "measured daily soiling rate (calibrate_soiling_rate)",
             "note": "Hardware and shading shares are heuristic assumptions, not directly measured."
         }
@@ -720,8 +760,8 @@ def analyze_grid_curtailment(start_time=None, end_time=None):
     running_hours = category_summary.get('Running', 0.0)
     availability_pct = (running_hours / total_daytime_hours * 100.0) if total_daytime_hours > 0 else 0.0
 
-    # Curtailed energy estimate uses the shared AVG_CURTAILED_KW assumption (LOG-01b)
-    curtailed_kwh = round(curtailment_hours * AVG_CURTAILED_KW, 1)
+    # Curtailed energy estimate uses the shared get_avg_curtailed_kw() assumption (LOG-01b)
+    curtailed_kwh = round(curtailment_hours * get_avg_curtailed_kw(), 1)
 
     # Daily curtailment events
     df['date'] = pd.to_datetime(df['timestamp_x']).dt.date.astype(str)

@@ -18,6 +18,7 @@ import ml_pipelines
 import agent_setup
 import config
 import events_store
+events_store.init_config_table()
 from google_antigravity_shim import Agent
 
 # --- Rate limiting (SEC-03) -------------------------------------------------
@@ -217,6 +218,34 @@ def api_data_range(request: Request):
     try:
         res = ml_pipelines.get_data_range()
         return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+class ConfigRequest(BaseModel):
+    PLANT_CAPACITY_KW: Optional[float] = None
+    LOSS_FACTOR: Optional[float] = None
+    AVG_CURTAILED_KW: Optional[float] = None
+    HARDWARE_LOSS_SHARE: Optional[float] = None
+
+
+@app.get("/api/config")
+@limiter.limit("60/minute")
+def api_get_config(request: Request):
+    try:
+        res = events_store.get_config()
+        return JSONResponse(content=res)
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.post("/api/config")
+@limiter.limit("30/minute")
+def api_post_config(request: Request, payload: ConfigRequest):
+    try:
+        updates = {k: v for k, v in payload.dict().items() if v is not None}
+        res = events_store.update_config(updates)
+        return JSONResponse(content={"status": "updated", "config": res})
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 

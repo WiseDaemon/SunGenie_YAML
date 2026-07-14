@@ -158,8 +158,60 @@ def log_feedback(prompt, response, rating, label=None):
     return {"id": fb_id, "rating": rating, "label": label, "created_at": created}
 
 
+def init_config_table():
+    """Create and initialize the app configuration table."""
+    conn = _conn()
+    try:
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS app_config (
+                key     TEXT PRIMARY KEY,
+                value   TEXT NOT NULL
+            )
+            """
+        )
+        defaults = {
+            "PLANT_CAPACITY_KW": "8648.0",
+            "LOSS_FACTOR": "0.85",
+            "AVG_CURTAILED_KW": "4000.0",
+            "HARDWARE_LOSS_SHARE": "0.25"
+        }
+        for k, v in defaults.items():
+            conn.execute("INSERT OR IGNORE INTO app_config (key, value) VALUES (?, ?)", (k, v))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_config():
+    """Get all configuration keys and values."""
+    init_config_table()
+    conn = _conn()
+    try:
+        cur = conn.execute("SELECT key, value FROM app_config")
+        res = {row[0]: float(row[1]) for row in cur.fetchall()}
+    finally:
+        conn.close()
+    return res
+
+
+def update_config(config_dict):
+    """Update configurations."""
+    init_config_table()
+    conn = _conn()
+    try:
+        for k, v in config_dict.items():
+            conn.execute("INSERT OR REPLACE INTO app_config (key, value) VALUES (?, ?)", (k, str(v)))
+        conn.commit()
+    finally:
+        conn.close()
+    return get_config()
+
+
 if __name__ == "__main__":
     init_events_table()
     init_feedback_table()
+    init_config_table()
     print("Events DB initialized at", config.EVENTS_DB_PATH)
     print("Summary:", summary())
+    print("Config:", get_config())

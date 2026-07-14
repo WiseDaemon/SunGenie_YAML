@@ -1,6 +1,26 @@
 import os
 from dotenv import load_dotenv
 
+def load_dotenv_resilient(path):
+    if not os.path.exists(path):
+        return
+    content = None
+    for enc in ('utf-8', 'utf-16', 'utf-16-le', 'utf-16-be'):
+        try:
+            with open(path, 'r', encoding=enc) as f:
+                content = f.read()
+            break
+        except UnicodeDecodeError:
+            continue
+    
+    if content is not None:
+        try:
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(content)
+        except Exception:
+            pass
+    load_dotenv(dotenv_path=path)
+
 # Load environment variables.
 env_path = os.environ.get("SUNGENIE_ENV_PATH")
 if not env_path:
@@ -9,7 +29,7 @@ if not env_path:
         env_path = windows_path
     else:
         env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-load_dotenv(dotenv_path=env_path)
+load_dotenv_resilient(env_path)
 
 # --- Database Configuration -------------------------------------------------
 # BLOCK-02: default to the database that ships next to the code, so the project
